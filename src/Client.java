@@ -2,24 +2,26 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.util.HashSet;
 import java.util.Scanner;
 import java.util.Set;
 
 public class Client {
-    static Scanner in = null;
+    private static final String localhost = "127.0.0.1";
+    private static Scanner in = new Scanner(System.in);
     private volatile static String response;
     private static String notified = "true";
+
     public static void main(String args[]) {
         int clientId = Integer.parseInt(args[0]);
-        for (int i=1; i<args.length; i++) {
-            Thread clientThread = new ClientThread("127.0.0.1", Integer.parseInt(args[i]),clientId);
+        for (int i = 1; i < args.length; i++) {
+            int serverPort = Integer.parseInt(args[i]);
+            Thread clientThread = new ClientThread(localhost, serverPort, clientId);
             clientThread.start();
         }
-        in = new Scanner(System.in);
-        response = " ";
-        while(!response.equals("Exit")) {
+
+        response = "";
+        while (!response.equalsIgnoreCase("exit")) {
             try {
                 Thread.currentThread().sleep(100);
                 synchronized (notified) {
@@ -29,12 +31,9 @@ public class Client {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-
-
         }
-
-
     }
+
     static class ClientThread extends Thread {
         private int clientId;
         private static Set<String> messages;
@@ -42,8 +41,8 @@ public class Client {
 
         private String serverAddress;
         private int serverPort;
-        static {
 
+        static {
             messages = new HashSet<>();
         }
 
@@ -68,7 +67,7 @@ public class Client {
                 out = new DataOutputStream(socket.getOutputStream());
 
             } catch (IOException u) {
-                System.out.println("Server "+serverPort+" is not open");
+                System.out.println("Server " + serverPort + " is not open");
                 return;
             }
 
@@ -89,7 +88,7 @@ public class Client {
                             System.out.println("Discard duplicate from " + replies[0]);
                         }
                     }
-                    if(line.contains("Game Over")) {
+                    if (line.contains("Game Over")) {
                         break;
                     }
                     // sleep read thread
@@ -103,7 +102,7 @@ public class Client {
                     out.writeUTF(response);
 
                 } catch (IOException | InterruptedException i) {
-                    System.out.println("Server "+serverPort+" breaks down");
+                    System.out.println("Server " + serverPort + " breaks down");
                     break;
                 }
             }
