@@ -1,3 +1,5 @@
+package clients;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -37,6 +39,7 @@ public class Client {
     static class ClientThread extends Thread {
         private int clientId;
         private static Set<String> messages;
+        private static Object messagesLock = new Object();
 
 
         private String serverAddress;
@@ -72,42 +75,46 @@ public class Client {
             }
 
 
-            // keep reading until "Over" is input
+            // Receive message from server
             while (true) {
                 try {
                     String line = input.readUTF();
+                    // System.out.println(line);
 
-                    String[] replies = line.split(":");
-                    synchronized (messages) {
-//                        System.out.println(messages);
-                        if (!messages.contains(replies[1])) {
-                            messages.add(replies[1]);
-                            System.out.println(line);
-
-                        } else {
-                            System.out.println("Discard duplicate from " + replies[0]);
-                        }
-                    }
                     if (line.contains("Game Over")) {
                         break;
                     }
-                    // sleep read thread
 
+                    String[] replies = line.split(":");
+                    String serverInfo = replies[0];
+                    String serviceInfo = replies[1];
+                    synchronized (messagesLock) {
+//                        System.out.println(messages);
+                        if (!messages.contains(serviceInfo)) {
+                            messages.add(serviceInfo);
+                            System.out.println(line);
+                        } else {
+                            System.out.println("Discard duplicate from " + serverInfo);
+                        }
+                    }
 
+                    // system.in lock, get y/n from stdin
                     synchronized (notified) {
 //                        System.out.println(Thread.currentThread());
                         notified.wait();
                     }
 //                    System.out.println(response);
-                    out.writeUTF(response);
+                    // send to clientID and server y/n
+                    out.writeUTF(clientId + ": " + response);
 
                 } catch (IOException | InterruptedException i) {
                     System.out.println("Server " + serverPort + " breaks down");
                     break;
                 }
             }
-            System.out.println("Connection is closed");
+
             // close the connection
+            // System.out.println("Connection is closed");
             try {
                 input.close();
                 out.close();

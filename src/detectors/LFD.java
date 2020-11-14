@@ -1,7 +1,7 @@
+package detectors;
+
 import java.io.*;
-import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketTimeoutException;
 
 public class LFD {
     private int lfdId;
@@ -14,7 +14,7 @@ public class LFD {
     private volatile boolean serverRegister;
     private volatile boolean serverDeleter;
 
-    public LFD(int serverPortNumber,String GFDAddress,int GFDPortNumber) {
+    public LFD(int serverPortNumber, String GFDAddress, int GFDPortNumber) {
         this.serverPortNumber = serverPortNumber;
         this.GFDAddress = GFDAddress;
         this.GFDPortNumber = GFDPortNumber;
@@ -23,33 +23,39 @@ public class LFD {
         this.serverRegister = false;
         this.serverDeleter = false;
     }
-    public void setLfdId(int id){
+
+    public void setLfdId(int id) {
         this.lfdId = id;
     }
 
     public static void main(String args[]) {
         int serverPortNumber = Integer.parseInt(args[0]);
         int GFDPortNumber = Integer.parseInt(args[1]);
-        LFD lfd = new LFD(serverPortNumber,"127.0.0.1",GFDPortNumber);
+        LFD lfd = new LFD(serverPortNumber, "127.0.0.1", GFDPortNumber);
         Thread serverThread = new ServerThread(lfd);
         Thread gfdThread = new GFDThread(lfd);
         gfdThread.start();
         serverThread.start();
     }
+
     static class ServerThread extends Thread {
+        private static final String HEARTBEAT_MSG = "heartbeat";
         private LFD lfd;
+
         public ServerThread(LFD lfd) {
             this.lfd = lfd;
         }
+
         @Override
         public void run() {
             while (true) {
                 try {
                     Socket socket = new Socket("127.0.0.1", lfd.serverPortNumber);
-                    System.out.println("Server:"+lfd.serverPortNumber+"Alive");
+                    System.out.println("Server " + lfd.serverPortNumber + ": Alive");
 
                     DataOutputStream out = new DataOutputStream(socket.getOutputStream());
-                    out.writeUTF("message");
+                    System.out.println("detectors.LFD " + lfd.lfdId + ": " + HEARTBEAT_MSG + " to server " + lfd.serverPortNumber);
+                    out.writeUTF("detectors.LFD " + lfd.lfdId + ": " + HEARTBEAT_MSG);
                     if (!lfd.serverConnected) {
                         lfd.serverConnected = true;
                         lfd.serverRegister = true;
@@ -60,7 +66,7 @@ public class LFD {
                         lfd.serverConnected = false;
                         lfd.serverDeleter = true;
                     }
-                    System.out.println("Lost Connection with Server "+lfd.serverPortNumber);
+                    System.out.println("detectors.LFD " + lfd.lfdId + ": " + "lost Connection with server " + lfd.serverPortNumber);
                 }
 
                 try {
@@ -71,9 +77,11 @@ public class LFD {
             }
         }
     }
-    static class GFDThread extends Thread{
+
+    static class GFDThread extends Thread {
         private LFD lfd;
-        public GFDThread(LFD lfd){
+
+        public GFDThread(LFD lfd) {
             this.lfd = lfd;
         }
 
@@ -84,45 +92,44 @@ public class LFD {
             DataInputStream in = null;
             String message = null;
             int heartBeatNum = 1;
-            while(true){
+            while (true) {
                 try {
-                    socket = new Socket(lfd.GFDAddress,lfd.GFDPortNumber);
-                    System.out.println("Heart beating with GFD");
+                    socket = new Socket(lfd.GFDAddress, lfd.GFDPortNumber);
+                    System.out.println("Heart beating with detectors.GFD");
                     out = new DataOutputStream(socket.getOutputStream());
                     in = new DataInputStream(socket.getInputStream());
-                    out.writeUTF("LFD: "+ socket.toString()+" connection request");
+                    out.writeUTF("detectors.LFD: " + socket.toString() + " connection request");
                     message = in.readUTF();
                     int lfdId = Integer.parseInt(message.split(" ")[5]);
                     lfd.setLfdId(lfdId);
                     break;
                 } catch (IOException u) {
-                    System.out.println("Can't connect GFD");
+                    System.out.println("Can't connect detectors.GFD");
 
                 }
-                try{
+                try {
                     Thread.sleep(lfd.heartBeatFrequency);
-                }
-                catch (InterruptedException e){
+                } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             }
 
-            while(true){
+            while (true) {
                 try {
-                    if(lfd.serverConnected&&lfd.serverRegister){
-                        out.writeUTF("LFD"+lfd.lfdId+" add replica "+"S"+lfd.lfdId);
+                    if (lfd.serverConnected && lfd.serverRegister) {
+                        out.writeUTF("detectors.LFD " + lfd.lfdId + ": add replica " + "S" + lfd.lfdId);
                         lfd.serverRegister = false;
                     }
-                    if(!lfd.serverConnected&&lfd.serverDeleter){
-                        out.writeUTF("LFD"+lfd.lfdId+" delete replica "+"S"+lfd.lfdId);
+                    if (!lfd.serverConnected && lfd.serverDeleter) {
+                        out.writeUTF("detectors.LFD " + lfd.lfdId + ": delete replica " + "S" + lfd.lfdId);
                         lfd.serverDeleter = false;
                     }//use functions
-                    out.writeUTF("LFD "+lfd.lfdId+" heartbeat  "+ heartBeatNum++);
+                    out.writeUTF("detectors.LFD " + lfd.lfdId + ": heartbeat " + heartBeatNum++);
                     message = in.readUTF();
-                    System.out.println("GFD : "+message);
+                    System.out.println("detectors.GFD: " + message);
                     Thread.sleep(lfd.heartBeatFrequency);
                 } catch (Exception e) {
-                    System.out.println("GFD is Closed");
+                    System.out.println("detectors.GFD is Closed");
                     return;
                 }
             }

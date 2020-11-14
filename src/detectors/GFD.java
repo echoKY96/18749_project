@@ -1,3 +1,5 @@
+package detectors;
+
 import java.awt.*;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -19,8 +21,8 @@ public class GFD {
     public static void main(String[] args) throws IOException {
 
         ServerSocket ss = new ServerSocket(portNumber);
-        System.out.println("GFD is listening on port " + portNumber);
-        System.out.println("GFD: " + LFDHandleThread.threadCount + " members");
+        System.out.println("detectors.GFD is listening on port " + portNumber);
+        System.out.println("detectors.GFD: " + LFDHandleThread.threadCount + " members");
         while (true) {
             LFDHandleThread handThread = new LFDHandleThread(ss.accept());
             handThread.start();
@@ -56,20 +58,23 @@ public class GFD {
                     } else if (message.contains("add replica")) {
                         String[] messages = message.split(" ");
                         registerServers.add(messages[messages.length - 1]);
-                        System.out.println("Registered Servers: " + registerServers);
+                        printMembers();
                     } else if (message.contains("delete replica")) {
                         String[] messages = message.split(" ");
                         registerServers.remove(messages[messages.length - 1]);
-                        System.out.println("Registered Servers: " + registerServers);
+                        printMembers();
                     } else {
-                        out.writeUTF("GFD has received heart beat number");//independent threads
+                        out.writeUTF("heart beat received");//independent threads
                     }
                 } catch (IOException e) {
-                    System.out.println("LFD" + threadCount + " Lost Connection");
+                    System.out.println("detectors.LFD" + threadCount + " Lost Connection");
                     return;
                 }
 
             }
+        }
+        private void printMembers() {
+            System.out.println("detectors.GFD: " + registerServers.size() + " members: " + registerServers);
         }
     }
 }
