@@ -19,23 +19,59 @@ public class GFD {
     }
 
     public static void main(String[] args) throws IOException {
+        int rmPortNumber = Integer.parseInt(args[0]);
+        Socket rmSocket = new Socket("127.0.0.1", rmPortNumber);
+        RMHandleThread rmHandleThread = new RMHandleThread(rmSocket);
+        rmHandleThread.start();
 
         ServerSocket ss = new ServerSocket(portNumber);
         System.out.println("detectors.GFD is listening on port " + portNumber);
         System.out.println("detectors.GFD: " + LFDHandleThread.threadCount + " members");
         while (true) {
-            LFDHandleThread handThread = new LFDHandleThread(ss.accept());
+            LFDHandleThread handThread = new LFDHandleThread(ss.accept(),rmSocket);
             handThread.start();
         }
 
     }
+    static class RMHandleThread extends Thread{
+        private Socket rmSocket;
+        public RMHandleThread(Socket rmSocket){
+            this.rmSocket = rmSocket;
+        }
+        @Override
+        public void run() {
+            DataOutputStream out = null;
+            try {
+                out = new DataOutputStream(rmSocket.getOutputStream());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            StringBuilder sb = new StringBuilder();
+            for (String server: registerServers) {
+                sb.append(server);
+                sb.append(" ");
+            }
 
+            try {
+                if(sb.length()==0){
+                    return;
+                }
+                out.writeUTF(sb.toString());
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+        }
+    }
     static class LFDHandleThread extends Thread {
         private Socket lfdSocket;
+        private Socket rmSocket;
         private volatile static int threadCount = 0;
 
-        public LFDHandleThread(Socket lfdSocket) {
+        public LFDHandleThread(Socket lfdSocket,Socket rmSocket) {
             this.lfdSocket = lfdSocket;
+            this.rmSocket = rmSocket;
         }
 
         @Override
@@ -59,10 +95,12 @@ public class GFD {
                         String[] messages = message.split(" ");
                         registerServers.add(messages[messages.length - 1]);
                         printMembers();
+                        notifyRM();
                     } else if (message.contains("delete replica")) {
                         String[] messages = message.split(" ");
                         registerServers.remove(messages[messages.length - 1]);
                         printMembers();
+                        notifyRM();
                     } else {
                         out.writeUTF("heart beat received");//independent threads
                     }
@@ -75,6 +113,15 @@ public class GFD {
         }
         private void printMembers() {
             System.out.println("detectors.GFD: " + registerServers.size() + " members: " + registerServers);
+        }
+        private void notifyRM(){
+            Thread rmHandleThread = new RMHandleThread(rmSocket);
+            rmHandleThread.start();
+            try {
+                rmHandleThread.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
     }
 }
