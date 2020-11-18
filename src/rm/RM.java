@@ -17,7 +17,7 @@ public class RM {
     public static void main(String[] args) throws IOException{
 
         ServerSocket ss = new ServerSocket(portNumber);
-        System.out.println("RM: " + registerServers.size());
+        System.out.println("RM: " + registerServers.size()+" member");
         while(true){
             GFDHandle(ss.accept());
         }
@@ -33,10 +33,12 @@ public class RM {
         while (true) {
             try {
                 String message = in.readUTF();
-                String[] servers = message.split(" ");
                 registerServers.clear();
-                for (String server: servers) {
-                    registerServers.add(server);
+                if(message.length()!=0){
+                    String[] servers = message.split(" ");
+                    for (String server: servers) {
+                        registerServers.add(server);
+                    }
                 }
                 System.out.println("RM: "+registerServers.size()+" member:"+message);
             } catch (IOException e) {

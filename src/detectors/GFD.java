@@ -53,9 +53,7 @@ public class GFD {
             }
 
             try {
-                if(sb.length()==0){
-                    return;
-                }
+
                 out.writeUTF(sb.toString());
 
             } catch (IOException e) {
