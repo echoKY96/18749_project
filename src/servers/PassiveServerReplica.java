@@ -1,56 +1,44 @@
 package servers;
 
-import pojo.Interval;
 import tasks.CheckPointReceiveTask;
 import tasks.CheckPointSendTask;
 import tasks.GameTask;
+import tasks.IdleTask;
 
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 
-public class PassiveServerReplica {
+public class PassiveServerReplica extends ServerReplica {
 
     /* Configuration info about a primary - backups group */
     private static final List<Integer> backups = new ArrayList<>();
     private static final String localhost = "127.0.0.1";
 
     /* Server state */
-    private final Integer listeningPort;
     private final Integer checkpointPort;
     private Boolean isPrimary;
-    private ConcurrentHashMap<Integer, Interval> state;
-    private Integer checkpointCount;
+    private Integer checkpointCount = 0;
 
     private PassiveServerReplica(Integer listeningPort, Integer checkpointPort, Boolean isPrimary) {
-        this.listeningPort = listeningPort;
+        super(listeningPort);
         this.checkpointPort = checkpointPort;
         this.isPrimary = isPrimary;
-        this.state = new ConcurrentHashMap<>();
-        this.checkpointCount = 0;
     }
 
+    /* Constructors */
     public static PassiveServerReplica getPrimaryServer(int listeningPort) {
         return new PassiveServerReplica(listeningPort, null, true);
     }
 
-    public static PassiveServerReplica getSlaveServer(int listeningPort, int checkpointCount) {
-        return new PassiveServerReplica(listeningPort, checkpointCount, false);
+    public static PassiveServerReplica getBackupServer(int listeningPort, int checkpointPort) {
+        return new PassiveServerReplica(listeningPort, checkpointPort, false);
     }
 
-    public ConcurrentHashMap<Integer, Interval> getState() {
-        return state;
-    }
-
-    public void setState(ConcurrentHashMap<Integer, Interval> state) {
-        this.state = state;
-    }
-
+    /* Getters and setters */
     public Boolean isPrimary() {
         return isPrimary;
     }
@@ -61,7 +49,7 @@ public class PassiveServerReplica {
     }
 
     @SuppressWarnings("unused")
-    public void setSlave() {
+    public void setBackup() {
         isPrimary = false;
     }
 
@@ -77,7 +65,7 @@ public class PassiveServerReplica {
         this.checkpointCount = this.checkpointCount + 1;
     }
 
-    public static List<Integer> getSlaves() {
+    public static List<Integer> getBackups() {
         return backups;
     }
 
@@ -89,41 +77,7 @@ public class PassiveServerReplica {
         return checkpointPort;
     }
 
-    static class IdleTask implements Runnable {
-        private final Socket socket;
-
-        public IdleTask(Socket socket) {
-            this.socket = socket;
-        }
-
-        @Override
-        public void run() {
-            // DataOutputStream dos;
-            DataInputStream dis;
-            try {
-                // dos = new DataOutputStream(socket.getOutputStream());
-                dis = new DataInputStream(socket.getInputStream());
-            } catch (IOException e) {
-                System.out.println("Input stream failed to set up");
-                e.printStackTrace();
-                return;
-            }
-
-            /* Idle task keeps reading message from client but not responding */
-            while (true) {
-                String line;
-                try {
-                    line = dis.readUTF();
-                    System.out.println(line);
-                } catch (IOException e) {
-                    System.out.println("Read error");
-                    e.printStackTrace();
-                    break;
-                }
-            }
-        }
-    }
-
+    @Override
     public void service() {
         ServerSocket ss;
         try {
@@ -143,12 +97,12 @@ public class PassiveServerReplica {
             new Thread(task).start();
         }
 
-        /* Primary server provides game service, Slave server stays idle */
+        /* Primary server provides game service, Backup server stays idle */
         while (true) {
             try {
                 Socket socket = ss.accept();
                 if (isPrimary()) {
-                    GameTask gameTask = new GameTask(socket, getState());
+                    GameTask gameTask = new GameTask(socket, this);
                     new Thread(gameTask).start();
                 } else {
                     IdleTask idleTask = new IdleTask(socket);
@@ -174,11 +128,11 @@ public class PassiveServerReplica {
             }
             server = getPrimaryServer(listeningPort);
         } else {
-            int checkpointCount = Integer.parseInt(args[2]);
-            server = getSlaveServer(listeningPort, checkpointCount);
+            int checkpointPort = Integer.parseInt(args[2]);
+            server = getBackupServer(listeningPort, checkpointPort);
         }
 
-        System.out.println((isPrimary ? "Primary server " : "Backup server " ) + listeningPort + " to be set up");
+        System.out.println((isPrimary ? "Primary server " : "Backup server ") + listeningPort + " to be set up");
 
         server.service();
     }
