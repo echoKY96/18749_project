@@ -54,8 +54,8 @@ public class LFD {
                     System.out.println("Server " + lfd.serverPortNumber + ": Alive");
 
                     DataOutputStream out = new DataOutputStream(socket.getOutputStream());
-                    System.out.println("detectors.LFD " + lfd.lfdId + ": " + HEARTBEAT_MSG + " to server " + lfd.serverPortNumber);
-                    out.writeUTF("detectors.LFD " + lfd.lfdId + ": " + HEARTBEAT_MSG);
+                    System.out.println("LFD " + lfd.lfdId + ": " + HEARTBEAT_MSG + " to server " + lfd.serverPortNumber);
+                    out.writeUTF("LFD " + lfd.lfdId + ": " + HEARTBEAT_MSG);
                     if (!lfd.serverConnected) {
                         lfd.serverConnected = true;
                         lfd.serverRegister = true;
@@ -66,7 +66,7 @@ public class LFD {
                         lfd.serverConnected = false;
                         lfd.serverDeleter = true;
                     }
-                    System.out.println("detectors.LFD " + lfd.lfdId + ": " + "lost Connection with server " + lfd.serverPortNumber);
+                    System.out.println("LFD " + lfd.lfdId + ": " + "lost Connection with server " + lfd.serverPortNumber);
                 }
 
                 try {
@@ -95,16 +95,16 @@ public class LFD {
             while (true) {
                 try {
                     socket = new Socket(lfd.GFDAddress, lfd.GFDPortNumber);
-                    System.out.println("Heart beating with detectors.GFD");
+                    System.out.println("Heart beating with GFD");
                     out = new DataOutputStream(socket.getOutputStream());
                     in = new DataInputStream(socket.getInputStream());
-                    out.writeUTF("detectors.LFD: " + socket.toString() + " connection request");
+                    out.writeUTF("LFD: " + socket.toString() + " connection request");
                     message = in.readUTF();
                     int lfdId = Integer.parseInt(message.split(" ")[5]);
                     lfd.setLfdId(lfdId);
                     break;
                 } catch (IOException u) {
-                    System.out.println("Can't connect detectors.GFD");
+                    System.out.println("Can't connect GFD");
 
                 }
                 try {
@@ -117,19 +117,19 @@ public class LFD {
             while (true) {
                 try {
                     if (lfd.serverConnected && lfd.serverRegister) {
-                        out.writeUTF("detectors.LFD " + lfd.lfdId + ": add replica " + "S" + lfd.lfdId);
+                        out.writeUTF("LFD " + lfd.lfdId + ": add replica " + "S" + lfd.lfdId);
                         lfd.serverRegister = false;
                     }
                     if (!lfd.serverConnected && lfd.serverDeleter) {
-                        out.writeUTF("detectors.LFD " + lfd.lfdId + ": delete replica " + "S" + lfd.lfdId);
+                        out.writeUTF("LFD " + lfd.lfdId + ": delete replica " + "S" + lfd.lfdId);
                         lfd.serverDeleter = false;
                     }//use functions
-                    out.writeUTF("detectors.LFD " + lfd.lfdId + ": heartbeat " + heartBeatNum++);
+                    out.writeUTF("LFD " + lfd.lfdId + ": heartbeat " + heartBeatNum++);
                     message = in.readUTF();
-                    System.out.println("detectors.GFD: " + message);
+                    System.out.println("GFD: " + message);
                     Thread.sleep(lfd.heartBeatFrequency);
                 } catch (Exception e) {
-                    System.out.println("detectors.GFD is Closed");
+                    System.out.println("GFD is Closed");
                     return;
                 }
             }

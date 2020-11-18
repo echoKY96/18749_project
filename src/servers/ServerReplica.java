@@ -1,48 +1,63 @@
 package servers;
 
 import pojo.Interval;
-import tasks.GameTask;
 
-import java.io.*;
-import java.net.InetAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class ServerReplica {
-    private final ConcurrentHashMap<Integer, Interval> state = new ConcurrentHashMap<>();
+abstract public class ServerReplica {
+    protected ConcurrentHashMap<Integer, Interval> state = new ConcurrentHashMap<>();
+
+    protected final Integer listeningPort;
+
+    public ServerReplica(int listeningPort) {
+        this.listeningPort = listeningPort;
+    }
 
     public ConcurrentHashMap<Integer, Interval> getState() {
         return state;
     }
 
-    public static void main(String[] args) throws IOException {
-        int port = Integer.parseInt(args[0]);
-        ServerSocket ss = new ServerSocket(port);
-        System.out.println("Server starts listening to: " + InetAddress.getLocalHost().getHostAddress() + ":" + port);
-
-        ServerReplica serverReplica = new ServerReplica();
-
-        while (true) {
-            try {
-                Socket socket = ss.accept();
-                GameTask gameTask = new GameTask(socket, serverReplica.getState());
-                new Thread(gameTask).start();
-            } catch (Exception e) {
-                e.printStackTrace();
-                break;
-            }
-        }
+    public void setState(ConcurrentHashMap<Integer, Interval> state) {
+        this.state = state;
     }
-//    static class Counter {
-//        @SuppressWarnings("checkstyle:JavadocVariable")
-//        public static long number = 0;
-//
-//        public synchronized void increase() {
-//            number++;
-//            System.out.println("Number of games played: " + number);
-//        }
-//    }
+
+    public void logState() {
+        state.forEach((k,v)-> System.out.println("Client " + k + " state: [" + v.getLo() + ", " + v.getHi() + "]"));
+    }
+
+    public void setHiById(int clientId, int hi) {
+        state.get(clientId).setHi(hi);
+    }
+
+    public void setLoById(int clientId, int lo) {
+        state.get(clientId).setLo(lo);
+    }
+
+    public int getLoById(int clientId) {
+        return state.get(clientId).getLo();
+    }
+
+    public int getHiById(int clientId) {
+        return state.get(clientId).getHi();
+    }
+
+    public int getMidById(int clientId) {
+        return state.get(clientId).getMid();
+    }
+
+    public void clearStateById(int clientId) {
+        state.remove(clientId);
+    }
+
+    public void initStateById(int clientId) {
+        state.put(clientId, Interval.getDeFaultInterval());
+    }
+
+    public boolean containsClientState(int clientId) {
+        return state.containsKey(clientId);
+    }
+
+    public abstract void service();
 }
 
 // timestamp, logger

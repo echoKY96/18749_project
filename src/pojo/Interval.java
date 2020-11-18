@@ -3,32 +3,38 @@ package pojo;
 import java.io.Serializable;
 
 public class Interval implements Serializable {
-    private int left;
-    private int right;
+    private static final int DEFAULT_LO = 1;
+    private static final int DEFAULT_HI = 10;
 
-    public Interval() {
-        this.left = 1;
-        this.right = 10;
+    private int lo;
+    private int hi;
+
+    public static Interval getDeFaultInterval() {
+        return new Interval(DEFAULT_LO, DEFAULT_HI);
     }
 
-    public Interval(int left, int right) {
-        this.left = left;
-        this.right = right;
+    private Interval(int lo, int hi) {
+        this.lo = lo;
+        this.hi = hi;
     }
 
-    public int getLeft() {
-        return left;
+    public int getLo() {
+        return lo;
     }
 
-    public int getRight() {
-        return right;
+    public void setLo(int lo) {
+        this.lo = lo;
     }
 
-    public void setLeft(int left) {
-        this.left = left;
+    public int getHi() {
+        return hi;
     }
 
-    public void setRight(int right) {
-        this.right = right;
+    public void setHi(int hi) {
+        this.hi = hi;
+    }
+
+    public int getMid() {
+        return (this.lo + this.hi) / 2;
     }
 }

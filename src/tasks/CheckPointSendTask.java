@@ -6,12 +6,10 @@ import servers.PassiveServerReplica;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
-import java.util.List;
 
 public class CheckPointSendTask implements Runnable {
 
     /* Configuration info about a primary - backups group */
-    private static final List<Integer> backups = PassiveServerReplica.getSlaves();
     private static final String hostname = PassiveServerReplica.getHostname();
     private static final int CKPT_FREQ = 5000;
 
@@ -28,25 +26,25 @@ public class CheckPointSendTask implements Runnable {
 
         while (true) {
             /* Send checkpoint to each buckup */
-            boolean allSlavesDown = true;
-            for (int serverPort : backups) {
+            boolean allBackupsDown = true;
+            for (int serverPort : PassiveServerReplica.getBackups()) {
                 /* Establish TCP/IP connection */
                 try {
                     socket = new Socket(hostname, serverPort);
                     out = new ObjectOutputStream(socket.getOutputStream());
                 } catch (IOException u) {
-                    System.out.println("Slave " + serverPort + " is not open");
+                    System.out.println("Backup " + serverPort + " is not open");
                     continue;
                 }
 
                 /* Send checkpoint to a buckup server */
-                allSlavesDown = false;
+                allBackupsDown = false;
                 try {
                     Checkpoint checkpoint = new Checkpoint(server.getState(), server.getCheckpointCount());
                     out.writeObject(checkpoint);
 
                     System.out.println("Sent checkpoint " + server.getCheckpointCount() + " to backup " + serverPort);
-                    server.getState().forEach((k, v) -> System.out.println("clients.Client " + k + " number range: [" + v.getLeft() + ", " + v.getRight() + "]"));
+                    server.logState();
                 } catch (IOException e) {
                     System.out.println("Error in sending checkpoint");
                     e.printStackTrace();
@@ -61,7 +59,7 @@ public class CheckPointSendTask implements Runnable {
                 }
             }
 
-            if (!allSlavesDown) {
+            if (!allBackupsDown) {
                 server.incrementCheckpointCount();
             }
 

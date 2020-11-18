@@ -35,8 +35,8 @@ public class CheckPointReceiveTask implements Runnable {
                 server.setState(checkpoint.getState()); // thread safety: single thread is safe
                 server.setCheckpointCount(checkpoint.getCheckpointCount());
 
-                System.out.println("POJO.Checkpoint " + server.getCheckpointCount() + " received");
-                server.getState().forEach((k,v)-> System.out.println("clients.Client " + k + " number range: [" + v.getLeft() + ", " + v.getRight() + "]"));
+                System.out.println("Checkpoint " + server.getCheckpointCount() + " received");
+                server.logState();
             } catch (Exception e) {
                 e.printStackTrace();
                 break;
