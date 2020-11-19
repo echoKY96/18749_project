@@ -19,6 +19,7 @@ public class RM {
         registerServers = new ArrayList<>();
     }
     public static void main(String[] args) throws IOException{
+        serverPorts = new ArrayList<>();
         for (String arg: args) {
             serverPorts.add(Integer.parseInt(arg));
         }
@@ -70,7 +71,8 @@ public class RM {
                 socket = new Socket("127.0.0.1", serverPort);
 
             } catch (IOException e) {
-                System.out.println("connection fail");
+                System.out.println("cannot connect "+serverPort);
+                return;
             }
             DataOutputStream out = null;
 
