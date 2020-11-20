@@ -17,22 +17,28 @@ public class RM {
     private static List<String> registerServers;
     private static final String NEW_ADD = "new server added";
     private static final String QUERY_NUM = "queryNum";
-    private static List<Integer> rmListeningPorts;
+    private static Map<Integer,String> rmListeningPorts;
     private static Map<String,Boolean> serverPortMap;
+    private static List<String> serverPorts;
     static {
         GFDListeningPortNumber = 7000;
         queryListeningPort = 7001;
         registerServers = new ArrayList<>();
         serverPortMap = new HashMap<>();
-        serverPortMap.put("8080",false);
-        serverPortMap.put("8081",false);
-        serverPortMap.put("8082",false);
+        serverPorts.add("8080");
+        serverPorts.add("8081");
+        serverPorts.add("8082");
+
+        for (String port: serverPorts) {
+            serverPortMap.put(port,false);
+        }
+
     }
 
     public static void main(String[] args) throws IOException {
-        rmListeningPorts = new ArrayList<>();
-        for (String arg : args) {
-            rmListeningPorts.add(Integer.parseInt(arg));
+        rmListeningPorts = new HashMap<>();
+        for (int i=0; i< rmListeningPorts.size();i++) {
+            rmListeningPorts.put(Integer.parseInt(args[i]),serverPorts.get(i));
         }
         ServerSocket gfd = new ServerSocket(GFDListeningPortNumber);
         ServerSocket ss = new ServerSocket(queryListeningPort);
@@ -104,9 +110,10 @@ public class RM {
                         String[] messages = message.split(" ");
                         serverPortMap.put(messages[messages.length-1],true);
 //                        System.out.println(serverPortMap);
-                        for (int rmListeningPort : rmListeningPorts) {
-
-                            new RMCommandThread(rmListeningPort).start();
+                        for (int rmListeningPort : rmListeningPorts.keySet()) {
+                            if(serverPortMap.get(rmListeningPort)){
+                                new RMCommandThread(rmListeningPort).start();
+                            }
                         }
 
                     }
