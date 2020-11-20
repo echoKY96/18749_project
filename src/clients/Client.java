@@ -7,13 +7,14 @@ import java.net.Socket;
 import java.util.HashSet;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Client {
     private static final String localhost = "127.0.0.1";
     private static Scanner in = new Scanner(System.in);
-    private volatile static String response;
+    private volatile static String response="";
     private static String notified = "true";
-
+    private static int request_num = 0;
     public static void main(String args[]) {
         int clientId = Integer.parseInt(args[0]);
         for (int i = 1; i < args.length; i++) {
@@ -22,26 +23,16 @@ public class Client {
             clientThread.start();
         }
 
-        response = "";
-        while (!response.equalsIgnoreCase("exit")) {
-            try {
-                Thread.currentThread().sleep(100);
-                synchronized (notified) {
-                    response = in.next();
-                    notified.notifyAll();
-                }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
+
     }
 
     static class ClientThread extends Thread {
+
         private int clientId;
         private static Set<String> messages;
         private static Object messagesLock = new Object();
-
-
+        private static AtomicInteger count = new AtomicInteger(1);
+        private static int threadCount = 0;
         private String serverAddress;
         private int serverPort;
 
@@ -60,7 +51,7 @@ public class Client {
             Socket socket = null;
             DataInputStream input = null;
             DataOutputStream out = null;
-
+            boolean reconnect = false;
             try {
                 socket = new Socket(serverAddress, serverPort);
                 // takes input from terminal
@@ -73,23 +64,21 @@ public class Client {
                 System.out.println("Server " + serverPort + " is not open");
                 return;
             }
-
+            threadCount++;
 
             // Receive message from server
             while (true) {
                 try {
                     String line = input.readUTF();
-                    // System.out.println(line);
 
-                    if (line.contains("Game Over")) {
-                        break;
-                    }
+//                    System.out.println(1);
+
 
                     String[] replies = line.split(":");
                     String serverInfo = replies[0];
                     String serviceInfo = replies[1];
                     synchronized (messagesLock) {
-//                        System.out.println(messages);
+
                         if (!messages.contains(serviceInfo)) {
                             messages.add(serviceInfo);
                             System.out.println(line);
@@ -97,24 +86,27 @@ public class Client {
                             System.out.println("Discard duplicate from " + serverInfo);
                         }
                     }
-
-                    // system.in lock, get y/n from stdin
-                    synchronized (notified) {
-//                        System.out.println(Thread.currentThread());
-                        notified.wait();
+                    if (line.contains("Game Over")) {
+                        System.out.println(line);
+                        getResponse();
+                        if(response.equals("exit")){
+                            break;
+                        }
                     }
-//                    System.out.println(response);
-                    // send to clientID and server y/n
+                    else{
+                        getResponse();
+                    }
+
+
                     out.writeUTF(clientId + ": " + response);
 
-                } catch (IOException | InterruptedException i) {
+                } catch (IOException e) {
                     System.out.println("Server " + serverPort + " breaks down");
                     break;
                 }
             }
 
             // close the connection
-            // System.out.println("Connection is closed");
             try {
                 input.close();
                 out.close();
@@ -123,5 +115,27 @@ public class Client {
                 System.out.println(i);
             }
         }
+        private void getResponse(){
+            if(count.get()==threadCount){
+                response = in.next();
+                if(response.equals("replay")){
+                    messages.clear();
+                }
+                synchronized (notified){
+                    notified.notifyAll();
+                }
+            }
+            else{
+                synchronized (notified) {
+                    count.addAndGet(1);
+                    try {
+                        notified.wait();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
     }
+
 }
