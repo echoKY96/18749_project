@@ -49,12 +49,12 @@ abstract public class ServerReplica {
         return this.requestQueue.isEmpty();
     }
 
-    public void enqueue(String line) {
-        this.requestQueue.offer(line);
+    public void enqueue(String line) throws InterruptedException {
+        this.requestQueue.put(line);
     }
 
-    public String dequeue() {
-        return this.requestQueue.poll();
+    public String dequeue() throws InterruptedException {
+        return this.requestQueue.take();
     }
 
     public void clearRQ() {

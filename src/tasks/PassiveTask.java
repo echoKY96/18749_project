@@ -1,5 +1,6 @@
 package tasks;
 
+import pojo.Tuple;
 import servers.PassiveServerReplica;
 
 import java.io.DataInputStream;
@@ -26,7 +27,9 @@ public class PassiveTask implements Runnable {
             DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
             DataInputStream dis = new DataInputStream(socket.getInputStream());
 
-            dos.writeUTF("Server " + socket.getLocalPort() + " : Welcome, keep a number in range [1, 10] and I'll guess it, enter \"play\" to start a game.");
+            if (server.isPrimary()) {
+                dos.writeUTF("Server " + socket.getLocalPort() + " : Welcome, keep a number in range [1, 10] and I'll guess it, enter \"play\" to start a game.");
+            }
 
             while (true) {
                 String line;
@@ -42,12 +45,13 @@ public class PassiveTask implements Runnable {
                     break;
                 } else {
                     /* Player connection */
-                    Map.Entry<Integer, String> messageEntry = sp.parseLine(line);
-                    Integer clientId = messageEntry.getKey();
-                    String message = messageEntry.getValue();
+                    Tuple tuple = sp.parseLine(line);
+                    Integer clientId = tuple.getClientId();
+                    String message = tuple.getMessage();
+                    Integer requestNum = tuple.getRequestNum();
 
                     // logger
-                    System.out.println("Client " + socket.getPort() + ": " + message);
+                    System.out.println("Client " + clientId + ", " + "request_num " + requestNum + ", " + message);
 
                     if (server.isPrimary()) {
                         if (!sp.gameService(dos, clientId, message)) {

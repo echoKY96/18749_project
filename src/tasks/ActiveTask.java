@@ -1,5 +1,6 @@
 package tasks;
 
+import pojo.Tuple;
 import servers.ActiveServerReplica;
 
 import java.io.DataInputStream;
@@ -43,12 +44,13 @@ public class ActiveTask implements Runnable {
                     break;
                 } else {
                     /* Player connection */
-                    Map.Entry<Integer, String> messageEntry = sp.parseLine(line);
-                    Integer clientId = messageEntry.getKey();
-                    String message = messageEntry.getValue();
+                    Tuple tuple = sp.parseLine(line);
+                    Integer clientId = tuple.getClientId();
+                    String message = tuple.getMessage();
+                    Integer requestNum = tuple.getRequestNum();
 
                     // logger
-                    System.out.println("Client " + socket.getPort() + ": " + message);
+                    System.out.println("Client " + clientId + ", " + "request_num: " + requestNum + ": " + message);
 
                     if (server.isReady() && !server.isCheckpointing()) {
                         if (!sp.gameService(dos, clientId, message)) {

@@ -4,105 +4,117 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
-import java.util.HashSet;
-import java.util.Scanner;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public class Client {
+
     private static final String localhost = "127.0.0.1";
-    private static Scanner in = new Scanner(System.in);
-    private volatile static String response="";
-    private static String notified = "true";
+    private static final Scanner in = new Scanner(System.in);
     private static int request_num = 0;
-    public static void main(String args[]) {
+
+    public static void main(String[] args) {
         int clientId = Integer.parseInt(args[0]);
+        List<BlockingQueue<String>> mqList = new ArrayList<>();
+
         for (int i = 1; i < args.length; i++) {
             int serverPort = Integer.parseInt(args[i]);
-            Thread clientThread = new ClientThread(localhost, serverPort, clientId);
+            BlockingQueue<String> mq = new LinkedBlockingQueue<>();
+            mqList.add(mq);
+
+            Thread clientThread = new ClientThread(localhost, serverPort, clientId, mq);
             clientThread.start();
         }
 
+        try {
+            while (true) {
+                String line = in.next();
 
+                request_num++;
+                for (BlockingQueue<String> mq : mqList) {
+                    mq.put(line);
+                }
+
+                if (line.equalsIgnoreCase("exit")) {
+                    break;
+                }
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     static class ClientThread extends Thread {
+        private final String serverAddress;
+        private final int serverPort;
+        private final int clientId;
+        BlockingQueue<String> mq;
 
-        private int clientId;
-        private static Set<String> messages;
-        private static Object messagesLock = new Object();
-        private static AtomicInteger count = new AtomicInteger(1);
-        private static int threadCount = 0;
-        private String serverAddress;
-        private int serverPort;
+        private static final Set<String> responseContainer = new HashSet<>();
+        private static final Object responseLock = new Object();
 
-        static {
-            messages = new HashSet<>();
-        }
 
-        public ClientThread(String serverAddress, int serverPort, int clientId) {
+        public ClientThread(String serverAddress, int serverPort, int clientId, BlockingQueue<String> mq) {
             this.clientId = clientId;
             this.serverAddress = serverAddress;
             this.serverPort = serverPort;
+            this.mq = mq;
         }
 
         @Override
         public void run() {
-            Socket socket = null;
-            DataInputStream input = null;
-            DataOutputStream out = null;
-            boolean reconnect = false;
-            try {
-                socket = new Socket(serverAddress, serverPort);
-                // takes input from terminal
-                input = new DataInputStream(socket.getInputStream());
+            Socket socket;
+            DataInputStream input;
+            DataOutputStream out;
 
-                // sends output to the socket
-                out = new DataOutputStream(socket.getOutputStream());
-
-            } catch (IOException u) {
-                System.out.println("Server " + serverPort + " is not open");
-                return;
-            }
-            threadCount++;
-
-            // Receive message from server
             while (true) {
                 try {
-                    String line = input.readUTF();
+                    socket = new Socket(serverAddress, serverPort);
+                    input = new DataInputStream(socket.getInputStream());
+                    out = new DataOutputStream(socket.getOutputStream());
+                    break;
+                } catch (IOException u) {
+                    System.out.println("Server " + serverPort + " is not open");
+                }
+            }
 
-                   System.out.println(line);
+            /* Receive message from server */
+            while (true) {
+                try {
+                    String response = input.readUTF();
 
-
-                    String[] replies = line.split(":");
+                    String[] replies = response.split(": ");
                     String serverInfo = replies[0];
                     String serviceInfo = replies[1];
-                    synchronized (messagesLock) {
 
-                        if (!messages.contains(serviceInfo)) {
-                            messages.add(serviceInfo);
-                            System.out.println(line);
-                        } else {
+                    synchronized (responseLock) {
+                        if (responseContainer.contains(serviceInfo)) {
                             System.out.println("Discard duplicate from " + serverInfo);
+                        } else {
+                            responseContainer.clear();
+                            responseContainer.add(serviceInfo);
+                            System.out.println(response);
                         }
                     }
-                    if (line.contains("Game Over")) {
-                        System.out.println(line);
-                        getResponse();
-                        if(response.equals("exit")){
-                            break;
-                        }
+
+                    String userInput = mq.take();
+
+                    out.writeUTF(clientId + ": " + userInput + ": " + request_num);
+
+                    if (userInput.equalsIgnoreCase("exit")) {
+                        break;
                     }
-                    else{
-                        getResponse();
-                    }
-
-
-                    out.writeUTF(clientId + ": " + response);
-
                 } catch (IOException e) {
                     System.out.println("Server " + serverPort + " breaks down");
+
+                    mq.clear();
+                    Thread clientThread = new ClientThread(localhost, serverPort, clientId, mq);
+                    clientThread.start();
+
                     break;
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
             }
 
@@ -111,31 +123,9 @@ public class Client {
                 input.close();
                 out.close();
                 socket.close();
-            } catch (IOException i) {
-                System.out.println(i);
-            }
-        }
-        private void getResponse(){
-            if(count.get()==threadCount){
-                response = in.next();
-                if(response.equals("replay")){
-                    messages.clear();
-                }
-                synchronized (notified){
-                    notified.notifyAll();
-                }
-            }
-            else{
-                synchronized (notified) {
-                    count.addAndGet(1);
-                    try {
-                        notified.wait();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
     }
-
 }

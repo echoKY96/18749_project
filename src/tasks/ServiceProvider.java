@@ -1,5 +1,6 @@
 package tasks;
 
+import pojo.Tuple;
 import servers.ServerReplica;
 
 import java.io.DataOutputStream;
@@ -27,12 +28,13 @@ public class ServiceProvider {
         System.out.println("Client " + socket.getPort() + " state: [" + server.getLoById(clientId) + ", " + server.getHiById(clientId) + "]");
     }
 
-    public Map.Entry<Integer, String> parseLine(String line) {
+    public Tuple parseLine(String line) {
         String[] splitLine = line.split(": ");
         Integer clientId = Integer.parseInt(splitLine[0]);
         String message = splitLine[1];
+        Integer requestNum = Integer.parseInt(splitLine[2]);
 
-        return new AbstractMap.SimpleEntry<>(clientId, message);
+        return new Tuple(clientId, message, requestNum);
     }
 
     public boolean gameService(DataOutputStream dos, Integer clientId, String message) throws IOException {
@@ -52,8 +54,6 @@ public class ServiceProvider {
             // logger
             System.out.println("Game Over for client " + socket.getPort());
 
-            dos.writeUTF("Server " + socket.getLocalPort() + " : Game Over");
-
             // exit command would disconnect from the server
             return false;
         } else if (server.containsClientState(clientId)) {
@@ -64,20 +64,20 @@ public class ServiceProvider {
             } else if (message.equalsIgnoreCase(NO_MSG)) {
                 server.setHiById(clientId, mid);
             } else {
-                dos.writeUTF("Please enter a valid command.");
+                dos.writeUTF("Server " + socket.getLocalPort() + ": Please enter a valid command.");
                 return true;
             }
 
             if (server.getLoById(clientId) == server.getHiById(clientId)) {
                 /* Game over */
-                dos.writeUTF("Server " + socket.getLocalPort() + " : Your number is " + server.getLoById(clientId) + "\nGame Over");
+                dos.writeUTF("Server " + socket.getLocalPort() + " : Your number is " + server.getLoById(clientId) + "\nGame Over, enter \"replay\" or \"exit\"");
 
                 server.clearStateById(clientId);
 
                 // logger
                 System.out.println("Game Over for client " + socket.getPort());
 
-                return false;
+                return true;
             } else {
                 /* Game continue */
                 dos.writeUTF("Server " + socket.getLocalPort() + " : Is this number greater than " + server.getMidById(clientId) + " y/n?");
@@ -86,13 +86,13 @@ public class ServiceProvider {
                 logRange(clientId);
             }
         } else {
-            dos.writeUTF("Please enter a valid command.");
+            dos.writeUTF("Server " + socket.getLocalPort() + ": Please enter a valid command.");
         }
 
         return true;
     }
 
-    public void queuingService(String line) {
+    public void queuingService(String line) throws InterruptedException {
         /* Idle task keeps queueing messages from client but not responding */
         server.enqueue(line);
     }

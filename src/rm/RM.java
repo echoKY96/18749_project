@@ -55,7 +55,6 @@ public class RM {
             rmToCheckpointPortMap.put(rmListeningPort, checkpointPorts.get(i));
             serverToCheckpointMap.put(serverPorts.get(i), checkpointPorts.get(i));
         }
-        System.out.println(serverToCheckpointMap);
 
         ServerSocket gfd;
         ServerSocket ss;
