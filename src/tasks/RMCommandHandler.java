@@ -65,7 +65,7 @@ public class RMCommandHandler implements Runnable {
                 Checkpoint checkpoint = new Checkpoint(server.getState(), 0);
                 out.writeObject(checkpoint);
 
-                System.out.println("Sent checkpoint " + " to newly added server " + checkpointPort);
+                System.out.println("Server: Sent checkpoint to newly added server" + checkpointPort);
                 server.logState();
             } catch (IOException e) {
                 System.out.println("Error in sending checkpoint");

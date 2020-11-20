@@ -69,7 +69,7 @@ public class ServiceProvider {
             }
 
             if (server.getLoById(clientId) == server.getHiById(clientId)) {
-                /* Game over*/
+                /* Game over */
                 dos.writeUTF("Server " + socket.getLocalPort() + " : Your number is " + server.getLoById(clientId) + "\nGame Over");
 
                 server.clearStateById(clientId);

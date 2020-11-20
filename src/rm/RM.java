@@ -12,14 +12,15 @@ import java.util.List;
 import java.util.Map;
 
 public class RM {
-    private static int GFDListeningPortNumber;
-    private static int queryListeningPort;
-    private static List<String> registerServers;
+    private static final int GFDListeningPortNumber;
+    private static final int queryListeningPort;
+    private static final List<String> registerServers;
     private static final String NEW_ADD = "new server added";
     private static final String QUERY_NUM = "queryNum";
-    private static Map<Integer,String> rmListeningPorts;
-    private static Map<String,Boolean> serverPortMap;
-    private static List<String> serverPorts;
+    private static final Map<Integer, String> rmListeningPorts = new HashMap<>();
+    private static final Map<String, Boolean> serverPortMap;
+    private static final List<String> serverPorts;
+
     static {
         GFDListeningPortNumber = 7000;
         queryListeningPort = 7001;
@@ -30,28 +31,40 @@ public class RM {
         serverPorts.add("8081");
         serverPorts.add("8082");
 
-        for (String port: serverPorts) {
-            serverPortMap.put(port,false);
+        for (String port : serverPorts) {
+            serverPortMap.put(port, false);
         }
 
     }
 
-    public static void main(String[] args) throws IOException {
-        rmListeningPorts = new HashMap<>();
-        for (int i=0; i< rmListeningPorts.size();i++) {
-            rmListeningPorts.put(Integer.parseInt(args[i]),serverPorts.get(i));
+    public static void main(String[] args) {
+        for (int i = 0; i < serverPorts.size(); i++) {
+            rmListeningPorts.put(Integer.parseInt(args[i]), serverPorts.get(i));
         }
-        ServerSocket gfd = new ServerSocket(GFDListeningPortNumber);
-        ServerSocket ss = new ServerSocket(queryListeningPort);
-        System.out.println("RM: " + registerServers.size() + " member");
-        new GFDHandleThread(gfd.accept()).start();
+
+        ServerSocket gfd;
+        ServerSocket ss;
+        try {
+            gfd = new ServerSocket(GFDListeningPortNumber);
+            ss = new ServerSocket(queryListeningPort);
+            System.out.println("RM: " + registerServers.size() + " member");
+            new GFDHandleThread(gfd.accept()).start();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return;
+        }
+
         while (true) {
-            new queryHandleThread(ss.accept()).start();
+            try {
+                new queryHandleThread(ss.accept()).start();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
     static class queryHandleThread extends Thread {
-        private Socket socket;
+        private final Socket socket;
 
         public queryHandleThread(Socket socket) {
             this.socket = socket;
@@ -64,10 +77,11 @@ public class RM {
                 ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
 
                 String line = dis.readUTF();
-                System.out.println(line);
 
                 if (line.equalsIgnoreCase(QUERY_NUM)) {
                     oos.writeObject(serverPortMap);
+
+                    System.out.println("Server query members");
                 } else {
                     System.out.println("Impossible");
                 }
@@ -79,7 +93,7 @@ public class RM {
     }
 
     static class GFDHandleThread extends Thread {
-        private Socket gfdSocket;
+        private final Socket gfdSocket;
 
         public GFDHandleThread(Socket gfdSocket) {
             this.gfdSocket = gfdSocket;
@@ -87,12 +101,13 @@ public class RM {
 
         @Override
         public void run() {
-            DataInputStream in = null;
+            DataInputStream in;
             try {
                 in = new DataInputStream(gfdSocket.getInputStream());
 
             } catch (IOException e) {
                 e.printStackTrace();
+                return;
             }
             while (true) {
                 try {
@@ -107,21 +122,20 @@ public class RM {
                             registerServers.add(server);
                         }
                     }
-                    if (message.contains("add")) {
 
-//                        System.out.println(serverPortMap);
+                    if (message.contains("add")) {
                         for (int rmListeningPort : rmListeningPorts.keySet()) {
-                            if(serverPortMap.get(rmListeningPort)){
+                            String serverPort = rmListeningPorts.get(rmListeningPort);
+                            if (serverPortMap.get(serverPort)) {
                                 new RMCommandThread(rmListeningPort).start();
                             }
                         }
                         String[] messages = message.split(" ");
-                        serverPortMap.put(messages[messages.length-1],true);
-
+                        serverPortMap.put(messages[messages.length - 1], true);
                     }
-                    if(message.contains("delete")){
+                    if (message.contains("delete")) {
                         String[] messages = message.split(" ");
-                        serverPortMap.put(messages[messages.length-1],false);
+                        serverPortMap.put(messages[messages.length - 1], false);
 //                        System.out.println(serverPortMap);
                     }
                     System.out.println("RM: " + registerServers.size() + " member:" + registerServers);
@@ -138,19 +152,17 @@ public class RM {
      * Send a command to
      */
     static class RMCommandThread extends Thread {
-        private int rmListeningPort;
+        private final int rmListeningPort;
 
         public RMCommandThread(int rmListeningPort) {
             this.rmListeningPort = rmListeningPort;
-
         }
 
         @Override
         public void run() {
-            Socket socket = null;
+            Socket socket;
             try {
                 socket = new Socket("127.0.0.1", rmListeningPort);
-
             } catch (IOException e) {
                 System.out.println("cannot connect " + rmListeningPort);
                 return;
@@ -159,6 +171,8 @@ public class RM {
             try {
                 DataOutputStream out = new DataOutputStream(socket.getOutputStream());
                 out.writeUTF(NEW_ADD);
+
+                System.out.println("RM: sent NEW_ADD command to rm listening port: " + rmListeningPort);
             } catch (IOException e) {
                 System.out.println("OutPut Exception");
             }

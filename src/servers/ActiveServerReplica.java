@@ -72,6 +72,8 @@ public class ActiveServerReplica extends ServerReplica {
 
         /* New server added */
         if (checkOtherServersOnline()) {
+            System.out.println("Other servers online, receive checkpoint first");
+
             Thread receiver = new Thread(new ReceiveCheckpointOneTime(this));
             receiver.start();
         } else {
