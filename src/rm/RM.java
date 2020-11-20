@@ -9,54 +9,82 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class RM {
-    private static int portNumber;
+    private static int GFDListeningPortNumber;
+    private static int SeverListeningPortNumber;
     private static List<String> registerServers;
     private static final String NEW_ADD = "new server added";
-    private static List<Integer> serverPorts;
+    private static List<Integer> rmListeningPorts;
 
     static {
-        portNumber = 7000;
+        GFDListeningPortNumber = 7000;
+        SeverListeningPortNumber = 7001;
         registerServers = new ArrayList<>();
     }
     public static void main(String[] args) throws IOException{
-        serverPorts = new ArrayList<>();
+        rmListeningPorts = new ArrayList<>();
         for (String arg: args) {
-            serverPorts.add(Integer.parseInt(arg));
+            rmListeningPorts.add(Integer.parseInt(arg));
         }
-        ServerSocket ss = new ServerSocket(portNumber);
+        ServerSocket gfd = new ServerSocket(GFDListeningPortNumber);
+        ServerSocket  ss = new ServerSocket(SeverListeningPortNumber);
         System.out.println("RM: " + registerServers.size()+" member");
-        while(true){
-            GFDHandle(ss.accept());
+        new GFDHandleThread(gfd.accept()).start();
+        new CheckFirstThread(ss.accept()).start();
+
+    }
+    static class CheckFirstThread extends Thread{
+        private Socket serverSocket;
+        public CheckFirstThread(Socket serverSocket){
+            this.serverSocket = serverSocket;
+        }
+        @Override
+        public void run() {
+            super.run();
         }
     }
-    private static void GFDHandle(Socket gfdSocket) {
-        DataInputStream in = null;
-        try {
-            in = new DataInputStream(gfdSocket.getInputStream());
-
-        } catch (IOException e) {
-            e.printStackTrace();
+    static class GFDHandleThread extends Thread {
+        private Socket gfdSocket;
+        public GFDHandleThread(Socket gfdSocket) {
+            this.gfdSocket = gfdSocket;
         }
-        while (true) {
+
+        @Override
+        public void run() {
+            DataInputStream in = null;
             try {
-                String message = in.readUTF();
-                registerServers.clear();
-                if(message.length()!=0){
-                    String[] servers = message.split(" ");
-                    for (String server: servers) {
-                        registerServers.add(server);
-                    }
-                }
-                for (int port: serverPorts) {
-                    new ServerThread(port).start();
-                }
-                System.out.println("RM: "+registerServers.size()+" member:"+message);
+                in = new DataInputStream(gfdSocket.getInputStream());
+
             } catch (IOException e) {
                 e.printStackTrace();
-                return;
             }
+            while (true) {
+                try {
+                    String message = in.readUTF();
+                    registerServers.clear();
+                    if(message.length()!=0){
+                        String[] servers = message.split(" ");
+                        for (String server: servers) {
+                            if(server.equals("add")||server.equals("delete")){
+                                break;
+                            }
+                            registerServers.add(server);
+                        }
+                    }
+                    if(message.contains("add")){
+                        for (int port: rmListeningPorts) {
+                            new ServerThread(port).start();
+                        }
+                    }
+                    System.out.println("RM: "+registerServers.size()+" member:"+registerServers);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    return;
+                }
 
+            }
         }
+
+
     }
     static class ServerThread extends Thread{
         private int serverPort;

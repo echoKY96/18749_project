@@ -21,7 +21,7 @@ public class GFD {
     public static void main(String[] args) throws IOException {
         int rmPortNumber = Integer.parseInt(args[0]);
         Socket rmSocket = new Socket("127.0.0.1", rmPortNumber);
-        RMHandleThread rmHandleThread = new RMHandleThread(rmSocket);
+        RMHandleThread rmHandleThread = new RMHandleThread(rmSocket,"");
         rmHandleThread.start();
 
         ServerSocket ss = new ServerSocket(portNumber);
@@ -35,8 +35,10 @@ public class GFD {
     }
     static class RMHandleThread extends Thread{
         private Socket rmSocket;
-        public RMHandleThread(Socket rmSocket){
+        private String operation;
+        public RMHandleThread(Socket rmSocket,String operation){
             this.rmSocket = rmSocket;
+            this.operation = operation;
         }
         @Override
         public void run() {
@@ -51,6 +53,7 @@ public class GFD {
                 sb.append(server);
                 sb.append(" ");
             }
+            sb.append(operation);
 
             try {
 
@@ -93,12 +96,12 @@ public class GFD {
                         String[] messages = message.split(" ");
                         registerServers.add(messages[messages.length - 1]);
                         printMembers();
-                        notifyRM();
+                        notifyRM("add");
                     } else if (message.contains("delete replica")) {
                         String[] messages = message.split(" ");
                         registerServers.remove(messages[messages.length - 1]);
                         printMembers();
-                        notifyRM();
+                        notifyRM("delete");
                     } else {
                         out.writeUTF("heart beat received");//independent threads
                     }
@@ -112,8 +115,8 @@ public class GFD {
         private void printMembers() {
             System.out.println("GFD: " + registerServers.size() + " members: " + registerServers);
         }
-        private void notifyRM(){
-            Thread rmHandleThread = new RMHandleThread(rmSocket);
+        private void notifyRM(String operation){
+            Thread rmHandleThread = new RMHandleThread(rmSocket,operation);
             rmHandleThread.start();
             try {
                 rmHandleThread.join();
