@@ -1,9 +1,6 @@
 package servers;
 
-import tasks.CheckPointReceiveTask;
-import tasks.CheckPointSendTask;
-import tasks.GameTask;
-import tasks.IdleTask;
+import tasks.*;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -23,19 +20,19 @@ public class PassiveServerReplica extends ServerReplica {
     private Boolean isPrimary;
     private Integer checkpointCount = 0;
 
-    private PassiveServerReplica(Integer listeningPort, Integer checkpointPort, Boolean isPrimary) {
-        super(listeningPort);
+    private PassiveServerReplica(Integer listeningPort, Integer rmListeningPort, Integer checkpointPort, Boolean isPrimary) {
+        super(listeningPort, rmListeningPort);
         this.checkpointPort = checkpointPort;
         this.isPrimary = isPrimary;
     }
 
     /* Constructors */
-    public static PassiveServerReplica getPrimaryServer(int listeningPort) {
-        return new PassiveServerReplica(listeningPort, null, true);
+    public static PassiveServerReplica getPrimaryServer(int listeningPort, int rmListeningPort) {
+        return new PassiveServerReplica(listeningPort, rmListeningPort, null, true);
     }
 
-    public static PassiveServerReplica getBackupServer(int listeningPort, int checkpointPort) {
-        return new PassiveServerReplica(listeningPort, checkpointPort, false);
+    public static PassiveServerReplica getBackupServer(int listeningPort, int rmListeningPort, int checkpointPort) {
+        return new PassiveServerReplica(listeningPort, rmListeningPort, checkpointPort, false);
     }
 
     /* Getters and setters */
@@ -90,10 +87,14 @@ public class PassiveServerReplica extends ServerReplica {
         }
 
         if (isPrimary()) {
-            CheckPointSendTask task = new CheckPointSendTask(this);
+            setReady();
+
+            SendCheckPointTask task = new SendCheckPointTask(this);
             new Thread(task).start();
         } else {
-            CheckPointReceiveTask task = new CheckPointReceiveTask(this);
+            setNotReady();
+
+            ReceiveCheckPointTask task = new ReceiveCheckPointTask(this);
             new Thread(task).start();
         }
 
@@ -101,13 +102,9 @@ public class PassiveServerReplica extends ServerReplica {
         while (true) {
             try {
                 Socket socket = ss.accept();
-                if (isPrimary()) {
-                    GameTask gameTask = new GameTask(socket, this);
-                    new Thread(gameTask).start();
-                } else {
-                    IdleTask idleTask = new IdleTask(socket);
-                    new Thread(idleTask).start();
-                }
+
+                PassiveTask task = new PassiveTask(socket, this);
+                new Thread(task).start();
             } catch (Exception e) {
                 System.out.println("Error in accepting connection request");
                 e.printStackTrace();
@@ -117,19 +114,20 @@ public class PassiveServerReplica extends ServerReplica {
     }
 
     public static void main(String[] args) {
-        int listeningPort = Integer.parseInt(args[0]);
-        boolean isPrimary = Boolean.parseBoolean(args[1]);
+        boolean isPrimary = Boolean.parseBoolean(args[0]);
+        int listeningPort = Integer.parseInt(args[1]);
+        int rmListeningPort = Integer.parseInt(args[2]);
 
         PassiveServerReplica server;
         if (isPrimary) {
-            for (int i = 2; i < args.length; i++) {
+            for (int i = 3; i < args.length; i++) {
                 int backupPort = Integer.parseInt(args[i]);
                 backups.add(backupPort);
             }
-            server = getPrimaryServer(listeningPort);
+            server = getPrimaryServer(listeningPort, rmListeningPort);
         } else {
-            int checkpointPort = Integer.parseInt(args[2]);
-            server = getBackupServer(listeningPort, checkpointPort);
+            int checkpointPort = Integer.parseInt(args[3]);
+            server = getBackupServer(listeningPort, rmListeningPort, checkpointPort);
         }
 
         System.out.println((isPrimary ? "Primary server " : "Backup server ") + listeningPort + " to be set up");

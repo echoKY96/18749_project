@@ -7,10 +7,10 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-public class CheckPointReceiveTask implements Runnable {
+public class ReceiveCheckPointTask implements Runnable {
     private final PassiveServerReplica server;
 
-    public CheckPointReceiveTask(PassiveServerReplica server) {
+    public ReceiveCheckPointTask(PassiveServerReplica server) {
         this.server = server;
     }
 
@@ -32,7 +32,8 @@ public class CheckPointReceiveTask implements Runnable {
                 ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
                 Checkpoint checkpoint = (Checkpoint)in.readObject();
 
-                server.setState(checkpoint.getState()); // thread safety: single thread is safe
+                server.clearRQ();
+                server.setState(checkpoint.getState()); // thread safety: volatile ensures visibility
                 server.setCheckpointCount(checkpoint.getCheckpointCount());
 
                 System.out.println("Checkpoint " + server.getCheckpointCount() + " received");

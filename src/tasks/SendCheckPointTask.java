@@ -7,7 +7,7 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 
-public class CheckPointSendTask implements Runnable {
+public class SendCheckPointTask implements Runnable {
 
     /* Configuration info about a primary - backups group */
     private static final String hostname = PassiveServerReplica.getHostname();
@@ -15,7 +15,7 @@ public class CheckPointSendTask implements Runnable {
 
     private final PassiveServerReplica server;
 
-    public CheckPointSendTask(PassiveServerReplica server) {
+    public SendCheckPointTask(PassiveServerReplica server) {
         this.server = server;
     }
 

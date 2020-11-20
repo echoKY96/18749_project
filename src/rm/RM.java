@@ -10,40 +10,63 @@ import java.util.List;
 
 public class RM {
     private static int GFDListeningPortNumber;
-    private static int SeverListeningPortNumber;
+    private static int queryListeningPort;
     private static List<String> registerServers;
     private static final String NEW_ADD = "new server added";
+    private static final String QUERY_NUM = "queryNum";
     private static List<Integer> rmListeningPorts;
 
     static {
         GFDListeningPortNumber = 7000;
-        SeverListeningPortNumber = 7001;
+        queryListeningPort = 7001;
         registerServers = new ArrayList<>();
     }
-    public static void main(String[] args) throws IOException{
+
+    public static void main(String[] args) throws IOException {
         rmListeningPorts = new ArrayList<>();
-        for (String arg: args) {
+        for (String arg : args) {
             rmListeningPorts.add(Integer.parseInt(arg));
         }
         ServerSocket gfd = new ServerSocket(GFDListeningPortNumber);
-        ServerSocket  ss = new ServerSocket(SeverListeningPortNumber);
-        System.out.println("RM: " + registerServers.size()+" member");
+        ServerSocket ss = new ServerSocket(queryListeningPort);
+        System.out.println("RM: " + registerServers.size() + " member");
         new GFDHandleThread(gfd.accept()).start();
-        new CheckFirstThread(ss.accept()).start();
-
-    }
-    static class CheckFirstThread extends Thread{
-        private Socket serverSocket;
-        public CheckFirstThread(Socket serverSocket){
-            this.serverSocket = serverSocket;
+        while (true) {
+            new queryHandleThread(ss.accept()).start();
         }
+    }
+
+    static class queryHandleThread extends Thread {
+        private Socket socket;
+
+        public queryHandleThread(Socket socket) {
+            this.socket = socket;
+        }
+
         @Override
         public void run() {
-            super.run();
+            try {
+                DataInputStream dis = new DataInputStream(socket.getInputStream());
+                DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
+
+                String line = dis.readUTF();
+                System.out.println(line);
+
+                if (line.equalsIgnoreCase(QUERY_NUM)) {
+                    dos.writeUTF(String.valueOf(registerServers.size()));
+                } else {
+                    System.out.println("Impossible");
+                }
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
+
     static class GFDHandleThread extends Thread {
         private Socket gfdSocket;
+
         public GFDHandleThread(Socket gfdSocket) {
             this.gfdSocket = gfdSocket;
         }
@@ -61,21 +84,21 @@ public class RM {
                 try {
                     String message = in.readUTF();
                     registerServers.clear();
-                    if(message.length()!=0){
+                    if (message.length() != 0) {
                         String[] servers = message.split(" ");
-                        for (String server: servers) {
-                            if(server.equals("add")||server.equals("delete")){
+                        for (String server : servers) {
+                            if (server.equals("add") || server.equals("delete")) {
                                 break;
                             }
                             registerServers.add(server);
                         }
                     }
-                    if(message.contains("add")){
-                        for (int port: rmListeningPorts) {
-                            new ServerThread(port).start();
+                    if (message.contains("add")) {
+                        for (int rmListeningPort : rmListeningPorts) {
+                            new RMCommandThread(rmListeningPort).start();
                         }
                     }
-                    System.out.println("RM: "+registerServers.size()+" member:"+registerServers);
+                    System.out.println("RM: " + registerServers.size() + " member:" + registerServers);
                 } catch (IOException e) {
                     e.printStackTrace();
                     return;
@@ -83,23 +106,27 @@ public class RM {
 
             }
         }
-
-
     }
-    static class ServerThread extends Thread{
-        private int serverPort;
-        public ServerThread(int serverPort){
-            this.serverPort = serverPort;
+
+    /**
+     * Send a command to
+     */
+    static class RMCommandThread extends Thread {
+        private int rmListeningPort;
+
+        public RMCommandThread(int rmListeningPort) {
+            this.rmListeningPort = rmListeningPort;
 
         }
+
         @Override
         public void run() {
             Socket socket = null;
             try {
-                socket = new Socket("127.0.0.1", serverPort);
+                socket = new Socket("127.0.0.1", rmListeningPort);
 
             } catch (IOException e) {
-                System.out.println("cannot connect "+serverPort);
+                System.out.println("cannot connect " + rmListeningPort);
                 return;
             }
             DataOutputStream out = null;
@@ -110,9 +137,6 @@ public class RM {
             } catch (IOException e) {
                 System.out.println("OutPut Exception");
             }
-
         }
-
-
     }
 }
