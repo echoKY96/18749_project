@@ -16,7 +16,7 @@ public class PassiveClient {
 
     public static void main(String[] args) {
         int clientId = Integer.parseInt(args[0]);
-        for (int i = 1; i < args.length - 1; i++) {
+        for (int i = 1; i < args.length; i++) {
             int serverPort = Integer.parseInt(args[i]);
             // PassiveClient passiveClient = new PassiveClient(localhost, serverPort, clientId);
             Thread clientThread = new ClientThread(localhost, serverPort, clientId);
