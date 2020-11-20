@@ -2,10 +2,10 @@ package servers;
 
 import pojo.Interval;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.Socket;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -105,31 +105,34 @@ abstract public class ServerReplica {
         this.iAmReady.getAndSet(false);
     }
 
-    public Integer queryServerNum() {
+    public boolean checkOtherServersOnline() {
         Socket socket;
         DataOutputStream out;
-        DataInputStream in;
+        ObjectInputStream in;
 
         /* Establish TCP/IP connection */
         while (true) {
             try {
                 socket = new Socket(hostname, rmQueryPort);
                 out = new DataOutputStream(socket.getOutputStream());
-                in = new DataInputStream(socket.getInputStream());
+                in = new ObjectInputStream(socket.getInputStream());
                 break;
             } catch (IOException u) {
                 System.out.println("Backup " + rmQueryPort + " is not open");
             }
         }
 
-        Integer result = null;
+        Map<String,Boolean> map = null;
 
         /* Send checkpoint to a newly added server */
         try {
             out.writeUTF(QUERY_NUM);
-            result = Integer.parseInt(in.readUTF());
+            map = (HashMap<String,Boolean>)in.readObject();
         } catch (IOException e) {
             System.out.println("Error in sending checkpoint");
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            System.out.println("Error in object type");
             e.printStackTrace();
         }
 
@@ -141,7 +144,19 @@ abstract public class ServerReplica {
             e.printStackTrace();
         }
 
-        return result;
+        if (map == null) {
+            System.out.println("Impossible");
+        } else {
+            for (Map.Entry<String, Boolean> entry : map.entrySet()) {
+                String key = entry.getKey();
+                Boolean exist = entry.getValue();
+
+                if (!key.equals(String.valueOf(listeningPort)) && exist) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     public abstract void service();

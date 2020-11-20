@@ -56,7 +56,7 @@ public class RMCommandHandler implements Runnable {
                 socket = new Socket(hostname, checkpointPort);
                 out = new ObjectOutputStream(socket.getOutputStream());
             } catch (IOException u) {
-                System.out.println("Backup " + checkpointPort + " is not open");
+                System.out.println("Active " + checkpointPort + " is not open");
                 continue;
             }
 

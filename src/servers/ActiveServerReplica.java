@@ -1,7 +1,7 @@
 package servers;
 
+import servers.server_threads.RMCommandDispatcher;
 import tasks.ActiveTask;
-import tasks.RMCommandHandler;
 import tasks.ReceiveCheckpointOneTime;
 
 import java.io.IOException;
@@ -71,25 +71,21 @@ public class ActiveServerReplica extends ServerReplica {
         }
 
         /* New server added */
-        Integer serverNum = queryServerNum();
-        if (serverNum == null) {
-            System.out.println("Impossible");
-        } else if (serverNum == 0) {
-            setReady();
-        } else if (serverNum > 0) {
+        if (checkOtherServersOnline()) {
             Thread receiver = new Thread(new ReceiveCheckpointOneTime(this));
             receiver.start();
+        } else {
+            setReady();
         }
+
+        Thread dispatcher = new Thread(new RMCommandDispatcher(rmSS, this));
+        dispatcher.start();
 
         while (true) {
             try {
-                Socket socket1 = serviceSS.accept();
-                ActiveTask task = new ActiveTask(socket1, this);
+                Socket socket = serviceSS.accept();
+                ActiveTask task = new ActiveTask(socket, this);
                 new Thread(task).start();
-
-                Socket socket2 = rmSS.accept();
-                RMCommandHandler handler = new RMCommandHandler(socket2, this);
-                new Thread(handler).start();
             } catch (Exception e) {
                 System.out.println("Error in accepting connection request");
                 e.printStackTrace();

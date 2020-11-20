@@ -54,15 +54,13 @@ public class RM {
         public void run() {
             try {
                 DataInputStream dis = new DataInputStream(socket.getInputStream());
-                DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
+                ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
 
                 String line = dis.readUTF();
                 System.out.println(line);
 
                 if (line.equalsIgnoreCase(QUERY_NUM)) {
-                    ObjectOutputStream mapStream = new ObjectOutputStream(dos);
-                    mapStream.writeObject(serverPortMap);
-//                  dos.writeUTF(String.valueOf(serverPortMap ));
+                    oos.writeObject(serverPortMap);
                 } else {
                     System.out.println("Impossible");
                 }
@@ -148,10 +146,9 @@ public class RM {
                 System.out.println("cannot connect " + rmListeningPort);
                 return;
             }
-            DataOutputStream out = null;
 
             try {
-                out = new DataOutputStream(socket.getOutputStream());
+                DataOutputStream out = new DataOutputStream(socket.getOutputStream());
                 out.writeUTF(NEW_ADD);
             } catch (IOException e) {
                 System.out.println("OutPut Exception");

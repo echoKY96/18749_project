@@ -70,19 +70,20 @@ public class ServiceProvider {
 
             if (server.getLoById(clientId) == server.getHiById(clientId)) {
                 /* Game over*/
+                dos.writeUTF("Server " + socket.getLocalPort() + " : Your number is " + server.getLoById(clientId) + "\nGame Over");
+
                 server.clearStateById(clientId);
 
                 // logger
                 System.out.println("Game Over for client " + socket.getPort());
 
-                dos.writeUTF("Server " + socket.getLocalPort() + " : Your number is " + server.getLoById(clientId) + "\nGame Over");
+                return false;
             } else {
                 /* Game continue */
+                dos.writeUTF("Server " + socket.getLocalPort() + " : Is this number greater than " + server.getMidById(clientId) + " y/n?");
 
                 // logger
                 logRange(clientId);
-
-                dos.writeUTF("Server " + socket.getLocalPort() + " : Is this number greater than " + server.getMidById(clientId) + " y/n?");
             }
         } else {
             dos.writeUTF("Please enter a valid command.");

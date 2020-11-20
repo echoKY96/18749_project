@@ -67,6 +67,7 @@ public class ActiveTask implements Runnable {
             dis.close();
             socket.close();
         } catch (Exception e) {
+            e.printStackTrace();
             System.out.println("Client " + socket.getPort() + " Lost connection");
         }
     }
