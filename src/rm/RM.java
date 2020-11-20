@@ -38,7 +38,7 @@ public class RM {
 
     public static void main(String[] args) throws IOException {
         rmListeningPorts = new HashMap<>();
-        for (int i=0; i< rmListeningPorts.size();i++) {
+        for (int i=0; i< serverPorts.size();i++) {
             rmListeningPorts.put(Integer.parseInt(args[i]),serverPorts.get(i));
         }
         ServerSocket gfd = new ServerSocket(GFDListeningPortNumber);
