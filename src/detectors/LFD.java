@@ -98,7 +98,7 @@ public class LFD {
                     System.out.println("Heart beating with GFD");
                     out = new DataOutputStream(socket.getOutputStream());
                     in = new DataInputStream(socket.getInputStream());
-                    out.writeUTF("LFD: " + socket.toString() + " connection request");
+                    out.writeUTF("LFD: " + socket.toString() + " connection request "+ lfd.serverPortNumber);
                     message = in.readUTF();
                     int lfdId = Integer.parseInt(message.split(" ")[5]);
                     lfd.setLfdId(lfdId);

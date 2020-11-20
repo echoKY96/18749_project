@@ -3,10 +3,13 @@ package rm;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class RM {
     private static int GFDListeningPortNumber;
@@ -15,11 +18,15 @@ public class RM {
     private static final String NEW_ADD = "new server added";
     private static final String QUERY_NUM = "queryNum";
     private static List<Integer> rmListeningPorts;
-
+    private static Map<String,Boolean> serverPortMap;
     static {
         GFDListeningPortNumber = 7000;
         queryListeningPort = 7001;
         registerServers = new ArrayList<>();
+        serverPortMap = new HashMap<>();
+        serverPortMap.put("8080",false);
+        serverPortMap.put("8081",false);
+        serverPortMap.put("8082",false);
     }
 
     public static void main(String[] args) throws IOException {
@@ -53,7 +60,9 @@ public class RM {
                 System.out.println(line);
 
                 if (line.equalsIgnoreCase(QUERY_NUM)) {
-                    dos.writeUTF(String.valueOf(registerServers.size()));
+                    ObjectOutputStream mapStream = new ObjectOutputStream(dos);
+                    mapStream.writeObject(serverPortMap);
+//                  dos.writeUTF(String.valueOf(serverPortMap ));
                 } else {
                     System.out.println("Impossible");
                 }
@@ -94,9 +103,19 @@ public class RM {
                         }
                     }
                     if (message.contains("add")) {
+                        String[] messages = message.split(" ");
+                        serverPortMap.put(messages[messages.length-1],true);
+//                        System.out.println(serverPortMap);
                         for (int rmListeningPort : rmListeningPorts) {
+
                             new RMCommandThread(rmListeningPort).start();
                         }
+
+                    }
+                    if(message.contains("delete")){
+                        String[] messages = message.split(" ");
+                        serverPortMap.put(messages[messages.length-1],false);
+//                        System.out.println(serverPortMap);
                     }
                     System.out.println("RM: " + registerServers.size() + " member:" + registerServers);
                 } catch (IOException e) {
