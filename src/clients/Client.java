@@ -71,7 +71,7 @@ public class Client {
                 try {
                     String line = input.readUTF();
 
-//                    System.out.println(1);
+                   System.out.println(line);
 
 
                     String[] replies = line.split(":");

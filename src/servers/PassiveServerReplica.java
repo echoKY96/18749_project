@@ -79,9 +79,9 @@ public class PassiveServerReplica extends ServerReplica {
         ServerSocket ss;
         try {
             ss = new ServerSocket(listeningPort);
-            System.out.println("Server starts listening to: " + InetAddress.getLocalHost().getHostAddress() + ":" + listeningPort);
+            System.out.println("Server: starts listening to: " + InetAddress.getLocalHost().getHostAddress() + ":" + listeningPort);
         } catch (IOException e) {
-            System.out.println("Server " + listeningPort + " failed to set up.");
+            System.out.println("Server: " + listeningPort + " failed to set up.");
             e.printStackTrace();
             return;
         }
@@ -106,7 +106,7 @@ public class PassiveServerReplica extends ServerReplica {
                 PassiveTask task = new PassiveTask(socket, this);
                 new Thread(task).start();
             } catch (Exception e) {
-                System.out.println("Error in accepting connection request");
+                System.out.println("Server: Error in accepting connection request");
                 e.printStackTrace();
                 break;
             }
@@ -130,7 +130,7 @@ public class PassiveServerReplica extends ServerReplica {
             server = getBackupServer(listeningPort, rmListeningPort, checkpointPort);
         }
 
-        System.out.println((isPrimary ? "Primary server " : "Backup server ") + listeningPort + " to be set up");
+        System.out.println("Server: " + (isPrimary ? "Primary server " : "Backup server ") + listeningPort + " to be set up");
 
         server.service();
     }

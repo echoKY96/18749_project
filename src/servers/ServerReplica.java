@@ -16,7 +16,7 @@ abstract public class ServerReplica {
 
     private static final Integer rmQueryPort = 7001;
 
-    private static final String QUERY_NUM = "queryNum";
+    private static final String QUERY_ONLINE = "queryOnline";
 
     protected volatile ConcurrentHashMap<Integer, Interval> state = new ConcurrentHashMap<>();
 
@@ -126,7 +126,7 @@ abstract public class ServerReplica {
 
         /* Send checkpoint to a newly added server */
         try {
-            out.writeUTF(QUERY_NUM);
+            out.writeUTF(QUERY_ONLINE);
             map = (HashMap<String,Boolean>)in.readObject();
         } catch (IOException e) {
             System.out.println("Error in sending checkpoint");

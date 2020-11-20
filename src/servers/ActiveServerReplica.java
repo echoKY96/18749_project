@@ -61,18 +61,18 @@ public class ActiveServerReplica extends ServerReplica {
         try {
             serviceSS = new ServerSocket(listeningPort);
             rmSS= new ServerSocket(rmListeningPort);
-            System.out.println("Server starts listening at clients: " + InetAddress.getLocalHost().getHostAddress() + ":" + listeningPort);
-            System.out.println("Server starts listening at commands: " + InetAddress.getLocalHost().getHostAddress() + ":" + rmListeningPort);
+            System.out.println("Server: starts listening at clients: " + InetAddress.getLocalHost().getHostAddress() + ":" + listeningPort);
+            System.out.println("Server: starts listening at commands: " + InetAddress.getLocalHost().getHostAddress() + ":" + rmListeningPort);
         } catch (IOException e) {
-            System.out.println("Server listening port: " + listeningPort + " failed to set up.");
-            System.out.println("Server rm command port: " + rmListeningPort + " failed to set up.");
+            System.out.println("Server: listening port: " + listeningPort + " failed to set up.");
+            System.out.println("Server: rm command port: " + rmListeningPort + " failed to set up.");
             e.printStackTrace();
             return;
         }
 
         /* New server added */
         if (checkOtherServersOnline()) {
-            System.out.println("Other servers online, receive checkpoint first");
+            System.out.println("Server: Other servers online, receive checkpoint first");
 
             Thread receiver = new Thread(new ReceiveCheckpointOneTime(this));
             receiver.start();
@@ -89,7 +89,7 @@ public class ActiveServerReplica extends ServerReplica {
                 ActiveTask task = new ActiveTask(socket, this);
                 new Thread(task).start();
             } catch (Exception e) {
-                System.out.println("Error in accepting connection request");
+                System.out.println("Server: Error in accepting connection request");
                 e.printStackTrace();
                 break;
             }
@@ -102,8 +102,6 @@ public class ActiveServerReplica extends ServerReplica {
         int checkpointPort = Integer.parseInt(args[2]);
 
         ActiveServerReplica server = new ActiveServerReplica(listeningPort, rmListeningPort, checkpointPort);
-
-        System.out.println("Active server " + listeningPort + " to be set up");
         server.service();
     }
 }

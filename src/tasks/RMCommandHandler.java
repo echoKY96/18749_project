@@ -12,7 +12,7 @@ public class RMCommandHandler implements Runnable {
 
     private static final String hostname = ActiveServerReplica.getHostname();
 
-    private final String NEW_ADD = "new server added";
+    private final String NEW_ADD = "new_add";
 
     private final Socket socket;
     private final ActiveServerReplica server;
@@ -28,12 +28,17 @@ public class RMCommandHandler implements Runnable {
             DataInputStream dis = new DataInputStream(socket.getInputStream());
 
             String line = dis.readUTF();
+            System.out.println("RM: " + line);
 
-            if (line.equalsIgnoreCase(NEW_ADD)) {
+            String[] messages = line.split(":");
+            String new_add = messages[0];
+            int checkpointPort = Integer.parseInt(messages[1]);
+
+            if (new_add.equalsIgnoreCase(NEW_ADD)) {
                 if (server.isReady()) {
                     synchronized (RMCommandHandler.class) {
                         server.setCheckpointing();
-                        sendCheckpointOneTime();
+                        sendCheckpointOneTime(checkpointPort);
                         server.setNotCheckpointing();
                     }
                 }
@@ -44,41 +49,39 @@ public class RMCommandHandler implements Runnable {
         }
     }
 
-    private void sendCheckpointOneTime() {
+
+    /* Send checkpoint to new added server */
+    private void sendCheckpointOneTime(int checkpointPort) {
         Socket socket;
         ObjectOutputStream out;
 
-        /* Send checkpoint to each server */
-        for (int checkpointPort : ActiveServerReplica.getCheckpointPorts()) {
+        /* Establish TCP/IP connection */
+        try {
+            socket = new Socket(hostname, checkpointPort);
+            out = new ObjectOutputStream(socket.getOutputStream());
+        } catch (IOException u) {
+            System.out.println("Active " + checkpointPort + " is not open");
+            return;
+        }
 
-            /* Establish TCP/IP connection */
-            try {
-                socket = new Socket(hostname, checkpointPort);
-                out = new ObjectOutputStream(socket.getOutputStream());
-            } catch (IOException u) {
-                System.out.println("Active " + checkpointPort + " is not open");
-                continue;
-            }
+        /* Send checkpoint to a newly added server */
+        try {
+            Checkpoint checkpoint = new Checkpoint(server.getState(), 0);
+            out.writeObject(checkpoint);
 
-            /* Send checkpoint to a newly added server */
-            try {
-                Checkpoint checkpoint = new Checkpoint(server.getState(), 0);
-                out.writeObject(checkpoint);
+            System.out.println("Server: Sent checkpoint to newly added server " + checkpointPort);
+            server.logState();
+        } catch (IOException e) {
+            System.out.println("Error in sending checkpoint");
+            e.printStackTrace();
+        }
 
-                System.out.println("Server: Sent checkpoint to newly added server" + checkpointPort);
-                server.logState();
-            } catch (IOException e) {
-                System.out.println("Error in sending checkpoint");
-                e.printStackTrace();
-            }
-
-            /* Close the connection */
-            try {
-                socket.close();
-            } catch (IOException e) {
-                System.out.println("Error in closing socket");
-                e.printStackTrace();
-            }
+        /* Close the connection */
+        try {
+            socket.close();
+        } catch (IOException e) {
+            System.out.println("Error in closing socket");
+            e.printStackTrace();
         }
     }
 }
