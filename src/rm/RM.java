@@ -25,6 +25,7 @@ public class RM {
         queryListeningPort = 7001;
         registerServers = new ArrayList<>();
         serverPortMap = new HashMap<>();
+        serverPorts = new ArrayList<>();
         serverPorts.add("8080");
         serverPorts.add("8081");
         serverPorts.add("8082");
@@ -107,14 +108,15 @@ public class RM {
                         }
                     }
                     if (message.contains("add")) {
-                        String[] messages = message.split(" ");
-                        serverPortMap.put(messages[messages.length-1],true);
+
 //                        System.out.println(serverPortMap);
                         for (int rmListeningPort : rmListeningPorts.keySet()) {
                             if(serverPortMap.get(rmListeningPort)){
                                 new RMCommandThread(rmListeningPort).start();
                             }
                         }
+                        String[] messages = message.split(" ");
+                        serverPortMap.put(messages[messages.length-1],true);
 
                     }
                     if(message.contains("delete")){
