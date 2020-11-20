@@ -29,7 +29,7 @@ public class SendCheckpointOneTime implements Runnable {
                 socket = new Socket(hostname, checkpointPort);
                 out = new ObjectOutputStream(socket.getOutputStream());
             } catch (IOException u) {
-                System.out.println("Backup " + checkpointPort + " is not open");
+                System.out.println("Newly added server checkpoint port  " + checkpointPort + " is not open");
                 continue;
             }
 
@@ -38,7 +38,7 @@ public class SendCheckpointOneTime implements Runnable {
                 Checkpoint checkpoint = new Checkpoint(server.getState(), 0);
                 out.writeObject(checkpoint);
 
-                System.out.println("Sent checkpoint " + " to newly added server " + checkpointPort);
+                System.out.println("Server: Sent checkpoint to newly added server " + checkpointPort);
                 server.logState();
             } catch (IOException e) {
                 System.out.println("Error in sending checkpoint");
