@@ -6,11 +6,14 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ActiveRM extends RM {
 
     private static final String NEW_ADD = "new_add";
     private static final String QUERY_ONLINE = "queryOnline";
+    private static final int  PORTBASE = 8080;
 
     public void service() {
         ServerSocket gfd;
@@ -110,7 +113,11 @@ public class ActiveRM extends RM {
                     if (message.contains("delete")) {
                         String[] messages = message.split(" ");
                         registrationMap.put(messages[messages.length - 1], false);
-//                        System.out.println(serverPortMap);
+                        // restart server
+                        int serverNumber = Integer.parseInt(messages[messages.length-1])-PORTBASE+1;
+                        Runtime.getRuntime().exec("java ServerReplica "+serverNumber);
+//                        System.out.println(messages[messages.length - 1]);
+
                     }
                     System.out.println("RM: " + registeredServers.size() + " member:" + registeredServers);
                 } catch (IOException e) {
