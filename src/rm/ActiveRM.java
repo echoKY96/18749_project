@@ -12,14 +12,7 @@ public class ActiveRM extends RM {
     private static final String NEW_ADD = "new_add";
     private static final String QUERY_ONLINE = "queryOnline";
 
-    public static void main(String[] args) {
-        readConfiguration();
-        System.out.println("Active RM: running");
-        ActiveRM rm = new ActiveRM();
-        rm.service();
-    }
-
-    private void service() {
+    public void service() {
         ServerSocket gfd;
         ServerSocket ss;
         try {

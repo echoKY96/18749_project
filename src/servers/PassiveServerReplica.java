@@ -125,34 +125,4 @@ public class PassiveServerReplica extends ServerReplica {
             }
         }
     }
-
-    public static void main(String[] args) {
-        /* Read configuration information */
-        int id = Integer.parseInt(args[0]);
-        Configuration config = Configuration.getConfig();
-
-        int serverPort;
-        int rmCommandPort;
-        int checkpointPort;
-        if (id == 1) {
-            serverPort = config.getR1Config().getServerPort();
-            rmCommandPort = config.getR1Config().getRmCommandPort();
-            checkpointPort = config.getR1Config().getCheckpointPort();
-        } else if (id == 2) {
-            serverPort = config.getR2Config().getServerPort();
-            rmCommandPort = config.getR2Config().getRmCommandPort();
-            checkpointPort = config.getR3Config().getCheckpointPort();
-        } else if (id == 3) {
-            serverPort = config.getR3Config().getServerPort();
-            rmCommandPort = config.getR3Config().getRmCommandPort();
-            checkpointPort = config.getR3Config().getCheckpointPort();
-        } else {
-            System.out.println("Impossible");
-            return;
-        }
-
-        /* Launch passive server */
-        PassiveServerReplica server = getBackupServer(serverPort, rmCommandPort, checkpointPort);
-        server.service();
-    }
 }

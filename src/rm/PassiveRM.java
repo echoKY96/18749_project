@@ -18,14 +18,7 @@ public class PassiveRM extends RM {
         PassiveRM.primaryServerPort = primaryServerPort;
     }
 
-    public static void main(String[] args) {
-        readConfiguration();
-        System.out.println("Passive RM: running");
-        PassiveRM rm = new PassiveRM();
-        rm.service();
-    }
-
-    private void service() {
+    public void service() {
         ServerSocket gfd;
         try {
             gfd = new ServerSocket(GFDServerPort);

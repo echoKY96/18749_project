@@ -1,5 +1,6 @@
 package servers;
 
+import configurations.Configuration;
 import pojo.Interval;
 
 import java.util.concurrent.BlockingQueue;
@@ -116,6 +117,44 @@ abstract public class ServerReplica {
     }
 
     public abstract void service();
+
+    public static void main(String[] args) {
+        int id = Integer.parseInt(args[0]);
+        Configuration config = Configuration.getConfig();
+
+        Configuration.Mode mode = config.getMode();
+
+        int serverPort;
+        int rmCommandPort;
+        int checkpointPort;
+        if (id == 1) {
+            serverPort = config.getR1Config().getServerPort();
+            rmCommandPort = config.getR1Config().getRmCommandPort();
+            checkpointPort = config.getR1Config().getCheckpointPort();
+        } else if (id == 2) {
+            serverPort = config.getR2Config().getServerPort();
+            rmCommandPort = config.getR2Config().getRmCommandPort();
+            checkpointPort = config.getR3Config().getCheckpointPort();
+        } else if (id == 3) {
+            serverPort = config.getR3Config().getServerPort();
+            rmCommandPort = config.getR3Config().getRmCommandPort();
+            checkpointPort = config.getR3Config().getCheckpointPort();
+        } else {
+            System.out.println("Impossible");
+            return;
+        }
+
+        ServerReplica server;
+        if (mode == Configuration.Mode.Active) {
+            server = new ActiveServerReplica(serverPort, rmCommandPort, checkpointPort);
+            server.service();
+        } else if (mode == Configuration.Mode.Passive) {
+            server = PassiveServerReplica.getBackupServer(serverPort, rmCommandPort, checkpointPort);
+            server.service();
+        } else {
+            System.out.println("Impossible");
+        }
+    }
 }
 
 // timestamp, logger

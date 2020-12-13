@@ -25,7 +25,7 @@ public class ActiveServerReplica extends ServerReplica {
 
     private final AtomicBoolean checkpointing = new AtomicBoolean(false);
 
-    private ActiveServerReplica(int serverPort, int rmCommandPort, int checkpointPort) {
+    public ActiveServerReplica(int serverPort, int rmCommandPort, int checkpointPort) {
         super(serverPort, rmCommandPort);
         this.checkpointPort = checkpointPort;
     }
@@ -143,33 +143,5 @@ public class ActiveServerReplica extends ServerReplica {
                 break;
             }
         }
-    }
-
-    public static void main(String[] args) {
-        int id = Integer.parseInt(args[0]);
-        Configuration config = Configuration.getConfig();
-
-        int serverPort;
-        int rmCommandPort;
-        int checkpointPort;
-        if (id == 1) {
-            serverPort = config.getR1Config().getServerPort();
-            rmCommandPort = config.getR1Config().getRmCommandPort();
-            checkpointPort = config.getR1Config().getCheckpointPort();
-        } else if (id == 2) {
-            serverPort = config.getR2Config().getServerPort();
-            rmCommandPort = config.getR2Config().getRmCommandPort();
-            checkpointPort = config.getR3Config().getCheckpointPort();
-        } else if (id == 3) {
-            serverPort = config.getR3Config().getServerPort();
-            rmCommandPort = config.getR3Config().getRmCommandPort();
-            checkpointPort = config.getR3Config().getCheckpointPort();
-        } else {
-            System.out.println("Impossible");
-            return;
-        }
-
-        ActiveServerReplica server = new ActiveServerReplica(serverPort, rmCommandPort, checkpointPort);
-        server.service();
     }
 }

@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 abstract public class RM {
-
+    protected static Configuration.Mode mode;
 
     protected static int GFDServerPort;
     protected static int queryServerPort;
@@ -36,8 +36,10 @@ abstract public class RM {
     /**
      * Read configuration information
      */
-    protected static void readConfiguration() {
+    protected void readConfiguration() {
         Configuration config = Configuration.getConfig();
+
+        mode = config.getMode();
 
         GFDServerPort = config.getRMConfig().getGFDServerPort();
         queryServerPort = config.getRMConfig().getQueryServerPort();
@@ -69,6 +71,25 @@ abstract public class RM {
         System.out.println("RM command listening port - Checkpoint receiving port: " + rmToCheckpointPortMap);
         System.out.println("Server port - Checkpoint receiving port: " + serverToCheckpointPortMap);
         System.out.println();
+    }
+
+    public abstract void service();
+
+    public static void main(String[] args) {
+        Configuration config = Configuration.getConfig();
+        RM rm;
+        if (config.getMode() == Configuration.Mode.Active) {
+            System.out.println("Active RM: running");
+            rm = new ActiveRM();
+        } else if (config.getMode() == Configuration.Mode.Passive) {
+            System.out.println("Passive RM: running");
+            rm = new PassiveRM();
+        } else {
+            System.out.println("Impossible");
+            return;
+        }
+        rm.readConfiguration();
+        rm.service();
     }
 }
 // timestamp
