@@ -1,41 +1,33 @@
 package servers;
 
-import servers.server_threads.RMCommandDispatcher;
-import tasks.ActiveTask;
-import tasks.ReceiveCheckpointOneTime;
+import configurations.Configuration;
+import servers.rm_command_handlers.ActiveRMCommandDispatcher;
+import servers.services.ActiveTask;
+import servers.checkpoint_tasks.ReceiveCheckpointOneTime;
 
+import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Arrays;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ActiveServerReplica extends ServerReplica {
-    private static final String localhost = "127.0.0.1";
-    private static final List<Integer> rmListeningPorts = Arrays.asList(10000, 10001, 10002);
-    private static final List<Integer> checkpointPorts = Arrays.asList(10086, 10087, 10088);
+
+    private static final String QUERY_ONLINE = "queryOnline";
+
+    private final Integer rmQueryPort = Configuration.getConfig().getRMConfig().getQueryServerPort();
 
     private final Integer checkpointPort;
 
-    private AtomicBoolean checkpointing = new AtomicBoolean(false);
+    private final AtomicBoolean checkpointing = new AtomicBoolean(false);
 
-    public ActiveServerReplica(int listeningPort, int rmListeningPort, int checkpointPort) {
-        super(listeningPort, rmListeningPort);
+    private ActiveServerReplica(int serverPort, int rmCommandPort, int checkpointPort) {
+        super(serverPort, rmCommandPort);
         this.checkpointPort = checkpointPort;
-    }
-
-    public static String getHostname() {
-        return localhost;
-    }
-
-    public static List<Integer> getRmListeningPorts() {
-        return rmListeningPorts;
-    }
-
-    public static List<Integer> getCheckpointPorts() {
-        return checkpointPorts;
     }
 
     public Integer getCheckpointPort() {
@@ -54,42 +46,99 @@ public class ActiveServerReplica extends ServerReplica {
         this.checkpointing.getAndSet(false);
     }
 
+    public boolean queryOtherServersOnline() {
+        Socket socket;
+        DataOutputStream out;
+        ObjectInputStream in;
+
+        /* Establish TCP/IP connection */
+        while (true) {
+            try {
+                socket = new Socket(hostName, rmQueryPort);
+                out = new DataOutputStream(socket.getOutputStream());
+                in = new ObjectInputStream(socket.getInputStream());
+                break;
+            } catch (IOException u) {
+                System.out.println("Backup " + rmQueryPort + " is not open");
+            }
+        }
+
+        Map<String,Boolean> map = null;
+
+        /* Send checkpoint to a newly added server */
+        try {
+            out.writeUTF(QUERY_ONLINE);
+            map = (HashMap<String,Boolean>)in.readObject();
+        } catch (IOException e) {
+            System.out.println("Error in sending checkpoint");
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            System.out.println("Error in object type");
+            e.printStackTrace();
+        }
+
+        /* Close the connection */
+        try {
+            socket.close();
+        } catch (IOException e) {
+            System.out.println("Error in closing socket");
+            e.printStackTrace();
+        }
+
+        if (map == null) {
+            System.out.println("Impossible");
+        } else {
+            for (Map.Entry<String, Boolean> entry : map.entrySet()) {
+                String key = entry.getKey();
+                Boolean exist = entry.getValue();
+
+                if (!key.equals(String.valueOf(serverPort)) && exist) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     @Override
     public void service() {
         ServerSocket serviceSS;
         ServerSocket rmSS;
         try {
-            serviceSS = new ServerSocket(listeningPort);
-            rmSS= new ServerSocket(rmListeningPort);
-            System.out.println("Server: starts listening at clients: " + InetAddress.getLocalHost().getHostAddress() + ":" + listeningPort);
-            System.out.println("Server: starts listening at commands: " + InetAddress.getLocalHost().getHostAddress() + ":" + rmListeningPort);
+            serviceSS = new ServerSocket(serverPort);
+            rmSS= new ServerSocket(rmCommandPort);
+            System.out.println("Active Server: starts listening at client requests port: " + InetAddress.getLocalHost().getHostAddress() + ":" + serverPort);
+            System.out.println("Active Server: starts listening at RM commands port: " + InetAddress.getLocalHost().getHostAddress() + ":" + rmCommandPort);
         } catch (IOException e) {
-            System.out.println("Server: listening port: " + listeningPort + " failed to set up.");
-            System.out.println("Server: rm command port: " + rmListeningPort + " failed to set up.");
+            System.out.println("Active Server: client request listening port: " + serverPort + " failed to set up.");
+            System.out.println("Active Server: rm command listening port: " + rmCommandPort + " failed to set up.");
             e.printStackTrace();
             return;
         }
 
-        /* New server added */
-        if (checkOtherServersOnline()) {
-            System.out.println("Server: Other servers online, receive checkpoint first");
+        /* First server added is ready, others are not */
+        if (queryOtherServersOnline()) {
+            System.out.println("Active Server: Other servers online, receive checkpoint first");
 
+            setNotReady();
             Thread receiver = new Thread(new ReceiveCheckpointOneTime(this));
             receiver.start();
         } else {
             setReady();
         }
 
-        Thread dispatcher = new Thread(new RMCommandDispatcher(rmSS, this));
+        /* Launch RM command dispatcher to receive RM command */
+        Thread dispatcher = new Thread(new ActiveRMCommandDispatcher(rmSS, this));
         dispatcher.start();
 
+        /* Provides service */
         while (true) {
             try {
                 Socket socket = serviceSS.accept();
                 ActiveTask task = new ActiveTask(socket, this);
                 new Thread(task).start();
             } catch (Exception e) {
-                System.out.println("Server: Error in accepting connection request");
+                System.out.println("Active Server: Error in accepting connection request");
                 e.printStackTrace();
                 break;
             }
@@ -97,11 +146,30 @@ public class ActiveServerReplica extends ServerReplica {
     }
 
     public static void main(String[] args) {
-        int listeningPort = Integer.parseInt(args[0]);
-        int rmListeningPort = Integer.parseInt(args[1]);
-        int checkpointPort = Integer.parseInt(args[2]);
+        int id = Integer.parseInt(args[0]);
+        Configuration config = Configuration.getConfig();
 
-        ActiveServerReplica server = new ActiveServerReplica(listeningPort, rmListeningPort, checkpointPort);
+        int serverPort;
+        int rmCommandPort;
+        int checkpointPort;
+        if (id == 1) {
+            serverPort = config.getR1Config().getServerPort();
+            rmCommandPort = config.getR1Config().getRmCommandPort();
+            checkpointPort = config.getR1Config().getCheckpointPort();
+        } else if (id == 2) {
+            serverPort = config.getR2Config().getServerPort();
+            rmCommandPort = config.getR2Config().getRmCommandPort();
+            checkpointPort = config.getR3Config().getCheckpointPort();
+        } else if (id == 3) {
+            serverPort = config.getR3Config().getServerPort();
+            rmCommandPort = config.getR3Config().getRmCommandPort();
+            checkpointPort = config.getR3Config().getCheckpointPort();
+        } else {
+            System.out.println("Impossible");
+            return;
+        }
+
+        ActiveServerReplica server = new ActiveServerReplica(serverPort, rmCommandPort, checkpointPort);
         server.service();
     }
 }

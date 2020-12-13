@@ -1,24 +1,27 @@
 package detectors;
 
-import java.io.*;
+import configurations.Configuration;
+
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.net.Socket;
 
 public class LFD {
     private int lfdId;
-    private int serverPortNumber;
-    private String GFDAddress;
-    private int GFDPortNumber;
-    private int heartBeatFrequency;
-    private final int defaultHeartBeatFrequency = 3000;
+    private final int serverPortNumber;
+    private final String GFDAddress;
+    private final int GFDPortNumber;
+    private final int heartBeatFrequency;
     private volatile boolean serverConnected;
     private volatile boolean serverRegister;
     private volatile boolean serverDeleter;
 
-    public LFD(int serverPortNumber, String GFDAddress, int GFDPortNumber) {
+    public LFD(int serverPortNumber, String GFDAddress, int GFDPortNumber, int heartBeatFrequency) {
         this.serverPortNumber = serverPortNumber;
         this.GFDAddress = GFDAddress;
         this.GFDPortNumber = GFDPortNumber;
-        this.heartBeatFrequency = defaultHeartBeatFrequency;
+        this.heartBeatFrequency = heartBeatFrequency;
         this.serverConnected = false;
         this.serverRegister = false;
         this.serverDeleter = false;
@@ -28,10 +31,26 @@ public class LFD {
         this.lfdId = id;
     }
 
-    public static void main(String args[]) {
-        int serverPortNumber = Integer.parseInt(args[0]);
-        int GFDPortNumber = Integer.parseInt(args[1]);
-        LFD lfd = new LFD(serverPortNumber, "127.0.0.1", GFDPortNumber);
+    public static void main(String[] args) {
+        Configuration config = Configuration.getConfig();
+
+        int lfdNum = Integer.parseInt(args[0]);
+
+        int GFDPortNumber = config.getGFDConfig().getServerPort();
+        int heartBeatFrequency = config.getLFDConfig().getHeartBeatFrequency();
+        int serverPortNumber;
+        if (lfdNum == 1 ) {
+            serverPortNumber = config.getR1Config().getServerPort();
+        } else if (lfdNum == 2) {
+            serverPortNumber = config.getR2Config().getServerPort();
+        } else if (lfdNum == 3) {
+            serverPortNumber = config.getR3Config().getServerPort();
+        } else {
+            System.out.println("Impossible");
+            return;
+        }
+
+        LFD lfd = new LFD(serverPortNumber, "127.0.0.1", GFDPortNumber, heartBeatFrequency);
         Thread serverThread = new ServerThread(lfd);
         Thread gfdThread = new GFDThread(lfd);
         gfdThread.start();
@@ -40,7 +59,7 @@ public class LFD {
 
     static class ServerThread extends Thread {
         private static final String HEARTBEAT_MSG = "heartbeat";
-        private LFD lfd;
+        private final LFD lfd;
 
         public ServerThread(LFD lfd) {
             this.lfd = lfd;
@@ -79,7 +98,7 @@ public class LFD {
     }
 
     static class GFDThread extends Thread {
-        private LFD lfd;
+        private final LFD lfd;
 
         public GFDThread(LFD lfd) {
             this.lfd = lfd;
@@ -87,10 +106,10 @@ public class LFD {
 
         @Override
         public void run() {
-            Socket socket = null;
-            DataOutputStream out = null;
-            DataInputStream in = null;
-            String message = null;
+            Socket socket;
+            DataOutputStream out;
+            DataInputStream in;
+            String message;
             int heartBeatNum = 1;
             while (true) {
                 try {

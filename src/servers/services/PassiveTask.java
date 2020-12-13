@@ -1,25 +1,23 @@
-package tasks;
+package servers.services;
 
 import pojo.Tuple;
-import servers.ActiveServerReplica;
+import servers.PassiveServerReplica;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.net.Socket;
-import java.util.Map;
 
-public class ActiveTask implements Runnable {
-
+public class PassiveTask implements Runnable {
     private static final String LFD_MSG = "heartbeat";
 
     private final ServiceProvider sp;
-    private final ActiveServerReplica server;
+    private final PassiveServerReplica server;
     private final Socket socket;
 
-    public ActiveTask(Socket socket, ActiveServerReplica server) {
-         this.sp = new ServiceProvider(socket, server);
-         this.socket = socket;
-         this.server = server;
+    public PassiveTask(Socket socket, PassiveServerReplica server) {
+        this.sp = new ServiceProvider(socket, server);
+        this.socket = socket;
+        this.server = server;
     }
 
     @Override
@@ -28,13 +26,18 @@ public class ActiveTask implements Runnable {
             DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
             DataInputStream dis = new DataInputStream(socket.getInputStream());
 
-            dos.writeUTF("Server " + socket.getLocalPort() + " : Welcome, keep a number in range [1, 10] and I'll guess it, enter \"play\" to start a game.");
+            if (server.isPrimary() && server.isReady()) {
+                dos.writeUTF("Server " + socket.getLocalPort() + " : Welcome, keep a number in range [1, 10] and I'll guess it, enter \"play\" to start a game.");
+            } else {
+                dos.writeUTF("Idle");
+            }
 
             while (true) {
                 String line;
-                if (!server.isRQEmpty()) {
+                if (server.isPrimary() && !server.isRQEmpty()) {
                     line = server.dequeue();
                 } else {
+                    /* Backup or Primary that has an empty RQ */
                     line = dis.readUTF();
                 }
 
@@ -50,16 +53,16 @@ public class ActiveTask implements Runnable {
                     Integer requestNum = tuple.getRequestNum();
 
                     // logger
-                    System.out.println("Client " + clientId + ", " + "request_num: " + requestNum + ": " + message);
+                    System.out.println("Client " + clientId + ", " + "request_num: " + requestNum + ", " + "message: " + message);
 
-                    if (server.isReady() && !server.isCheckpointing()) {
+                    if (server.isPrimary() && server.isReady()) {
                         if (!sp.gameService(dos, clientId, message)) {
                             break;
                         }
-                    } else if (server.isReady() && server.isCheckpointing() || !server.isReady()) {
-                        sp.queuingService(line);
                     } else {
-                        System.out.println("Impossible");
+                        sp.queuingService(line);
+                        System.out.println("Many enqueue");
+                        dos.writeUTF("Idle");
                     }
                 }
             }
@@ -69,7 +72,6 @@ public class ActiveTask implements Runnable {
             dis.close();
             socket.close();
         } catch (Exception e) {
-            e.printStackTrace();
             System.out.println("Client " + socket.getPort() + " Lost connection");
         }
     }

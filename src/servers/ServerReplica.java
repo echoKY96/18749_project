@@ -2,39 +2,48 @@ package servers;
 
 import pojo.Interval;
 
-import java.io.*;
-import java.net.Socket;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 abstract public class ServerReplica {
-    private static final String hostname = "127.0.0.1";
-
-    private static final Integer rmQueryPort = 7001;
-
-    private static final String QUERY_ONLINE = "queryOnline";
 
     protected volatile ConcurrentHashMap<Integer, Interval> state = new ConcurrentHashMap<>();
 
     protected final BlockingQueue<String> requestQueue = new LinkedBlockingQueue<>();
 
-    protected final Integer listeningPort;
+    protected final String hostName = "127.0.0.1";
 
-    protected final Integer rmListeningPort;
+    protected final Integer serverPort;
+
+    protected final Integer rmCommandPort;
 
     protected AtomicBoolean iAmReady = new AtomicBoolean(false);
 
-    public ServerReplica(int listeningPort, int rmListeningPort) {
-        this.listeningPort = listeningPort;
-        this.rmListeningPort = rmListeningPort;
+    public ServerReplica(int serverPort, int rmCommandPort) {
+        this.serverPort = serverPort;
+        this.rmCommandPort = rmCommandPort;
     }
 
     public ConcurrentHashMap<Integer, Interval> getState() {
         return state;
+    }
+
+
+    @SuppressWarnings("unused")
+    public String getHostName() {
+        return hostName;
+    }
+
+    @SuppressWarnings("unused")
+    public Integer getServerPort() {
+        return serverPort;
+    }
+
+    @SuppressWarnings("unused")
+    public Integer getRmCommandPort() {
+        return rmCommandPort;
     }
 
     public void setState(ConcurrentHashMap<Integer, Interval> state) {
@@ -45,6 +54,7 @@ abstract public class ServerReplica {
         state.forEach((k, v) -> System.out.println("Client " + k + " state: [" + v.getLo() + ", " + v.getHi() + "]"));
     }
 
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean isRQEmpty() {
         return this.requestQueue.isEmpty();
     }
@@ -103,60 +113,6 @@ abstract public class ServerReplica {
 
     public void setNotReady() {
         this.iAmReady.getAndSet(false);
-    }
-
-    public boolean checkOtherServersOnline() {
-        Socket socket;
-        DataOutputStream out;
-        ObjectInputStream in;
-
-        /* Establish TCP/IP connection */
-        while (true) {
-            try {
-                socket = new Socket(hostname, rmQueryPort);
-                out = new DataOutputStream(socket.getOutputStream());
-                in = new ObjectInputStream(socket.getInputStream());
-                break;
-            } catch (IOException u) {
-                System.out.println("Backup " + rmQueryPort + " is not open");
-            }
-        }
-
-        Map<String,Boolean> map = null;
-
-        /* Send checkpoint to a newly added server */
-        try {
-            out.writeUTF(QUERY_ONLINE);
-            map = (HashMap<String,Boolean>)in.readObject();
-        } catch (IOException e) {
-            System.out.println("Error in sending checkpoint");
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            System.out.println("Error in object type");
-            e.printStackTrace();
-        }
-
-        /* Close the connection */
-        try {
-            socket.close();
-        } catch (IOException e) {
-            System.out.println("Error in closing socket");
-            e.printStackTrace();
-        }
-
-        if (map == null) {
-            System.out.println("Impossible");
-        } else {
-            for (Map.Entry<String, Boolean> entry : map.entrySet()) {
-                String key = entry.getKey();
-                Boolean exist = entry.getValue();
-
-                if (!key.equals(String.valueOf(listeningPort)) && exist) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 
     public abstract void service();

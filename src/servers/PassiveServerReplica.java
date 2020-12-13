@@ -1,41 +1,53 @@
 package servers;
 
-import tasks.*;
+import configurations.Configuration;
+import servers.rm_command_handlers.PassiveRMCommandDispatcher;
+import servers.services.PassiveTask;
+import servers.checkpoint_tasks.*;
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class PassiveServerReplica extends ServerReplica {
 
-    /* Configuration info about a primary - backups group */
-    private static final List<Integer> backups = new ArrayList<>();
-    private static final String localhost = "127.0.0.1";
+    /* Configuration info */
+    private Integer primaryCheckpointPort = null;
 
     /* Server state */
     private final Integer checkpointPort;
-    private Boolean isPrimary;
-    private Integer checkpointCount = 0;
+    private Boolean isPrimary = false;
 
-    private PassiveServerReplica(Integer listeningPort, Integer rmListeningPort, Integer checkpointPort, Boolean isPrimary) {
-        super(listeningPort, rmListeningPort);
+    @SuppressWarnings("FieldMayBeFinal")
+    private AtomicInteger checkpointCount = new AtomicInteger(0);
+
+    private PassiveServerReplica(Integer serverPort, Integer rmCommandPort, Integer checkpointPort) {
+        super(serverPort, rmCommandPort);
         this.checkpointPort = checkpointPort;
-        this.isPrimary = isPrimary;
     }
 
     /* Constructors */
-    public static PassiveServerReplica getPrimaryServer(int listeningPort, int rmListeningPort) {
-        return new PassiveServerReplica(listeningPort, rmListeningPort, null, true);
-    }
-
-    public static PassiveServerReplica getBackupServer(int listeningPort, int rmListeningPort, int checkpointPort) {
-        return new PassiveServerReplica(listeningPort, rmListeningPort, checkpointPort, false);
+    public static PassiveServerReplica getBackupServer(int serverPort, int rmCommandPort, int checkpointPort) {
+        return new PassiveServerReplica(serverPort, rmCommandPort, checkpointPort);
     }
 
     /* Getters and setters */
+
+    public Integer getPrimaryCheckpointPort() {
+        return primaryCheckpointPort;
+    }
+
+    public void setPrimaryCheckpointPort(Integer primaryCheckpointPort) {
+        this.primaryCheckpointPort = primaryCheckpointPort;
+    }
+
+    public Integer getCheckpointPort() {
+        return checkpointPort;
+    }
+
     public Boolean isPrimary() {
         return isPrimary;
     }
@@ -51,60 +63,61 @@ public class PassiveServerReplica extends ServerReplica {
     }
 
     public Integer getCheckpointCount() {
-        return checkpointCount;
+        return checkpointCount.get();
     }
 
     public void setCheckpointCount(Integer checkpointCount) {
-        this.checkpointCount = checkpointCount;
+        this.checkpointCount.getAndSet(checkpointCount);
     }
 
     public void incrementCheckpointCount() {
-        this.checkpointCount = this.checkpointCount + 1;
+        this.checkpointCount.getAndIncrement();
     }
 
-    public static List<Integer> getBackups() {
-        return backups;
-    }
-
-    public static String getHostname() {
-        return localhost;
-    }
-
-    public Integer getCheckpointPort() {
-        return checkpointPort;
+    public List<Integer> getBackupCheckpointPorts() {
+        List<Integer> backupCheckpointPorts = new ArrayList<>();
+        for (int checkpointPort : Configuration.getConfig().getCheckPointPorts()) {
+            if (primaryCheckpointPort == checkpointPort) {
+                continue;
+            }
+            backupCheckpointPorts.add(checkpointPort);
+        }
+        return backupCheckpointPorts;
     }
 
     @Override
     public void service() {
-        ServerSocket ss;
+        ServerSocket serviceSS;
+        ServerSocket rmSS;
         try {
-            ss = new ServerSocket(listeningPort);
-            System.out.println("Server: starts listening to: " + InetAddress.getLocalHost().getHostAddress() + ":" + listeningPort);
+            serviceSS = new ServerSocket(serverPort);
+            rmSS= new ServerSocket(rmCommandPort);
+            System.out.println("Passive Server: starts listening at client requests port: " + InetAddress.getLocalHost().getHostAddress() + ":" + serverPort);
+            System.out.println("Passive Server: starts listening at RM commands port: " + InetAddress.getLocalHost().getHostAddress() + ":" + rmCommandPort);
         } catch (IOException e) {
-            System.out.println("Server: " + listeningPort + " failed to set up.");
+            System.out.println("Passive Server: client request listening port: " + serverPort + " failed to set up.");
+            System.out.println("Passive Server: rm command listening port: " + rmCommandPort + " failed to set up.");
             e.printStackTrace();
             return;
         }
 
-        if (isPrimary()) {
-            setReady();
+        /* Launched as backup, not ready state */
+        setNotReady();
+        setBackup();
 
-            SendCheckPointTask task = new SendCheckPointTask(this);
-            new Thread(task).start();
-        } else {
-            setNotReady();
+        /* Launch checkpoint task to receive checkpoint as backup or send checkpoint as primary */
+        new Thread(new SendCheckPointTask(this)).start();
+        new Thread(new ReceiveCheckpointTask(this)).start();
 
-            ReceiveCheckPointTask task = new ReceiveCheckPointTask(this);
-            new Thread(task).start();
-        }
+        /* Launch RM command dispatcher to receive RM command */
+        Thread dispatcher = new Thread(new PassiveRMCommandDispatcher(rmSS, this));
+        dispatcher.start();
 
-        /* Primary server provides game service, Backup server stays idle */
+        /* Provides service */
         while (true) {
             try {
-                Socket socket = ss.accept();
-
-                PassiveTask task = new PassiveTask(socket, this);
-                new Thread(task).start();
+                Socket socket = serviceSS.accept();
+                new Thread(new PassiveTask(socket, this)).start();
             } catch (Exception e) {
                 System.out.println("Server: Error in accepting connection request");
                 e.printStackTrace();
@@ -114,24 +127,32 @@ public class PassiveServerReplica extends ServerReplica {
     }
 
     public static void main(String[] args) {
-        boolean isPrimary = Boolean.parseBoolean(args[0]);
-        int listeningPort = Integer.parseInt(args[1]);
-        int rmListeningPort = Integer.parseInt(args[2]);
+        /* Read configuration information */
+        int id = Integer.parseInt(args[0]);
+        Configuration config = Configuration.getConfig();
 
-        PassiveServerReplica server;
-        if (isPrimary) {
-            for (int i = 3; i < args.length; i++) {
-                int backupPort = Integer.parseInt(args[i]);
-                backups.add(backupPort);
-            }
-            server = getPrimaryServer(listeningPort, rmListeningPort);
+        int serverPort;
+        int rmCommandPort;
+        int checkpointPort;
+        if (id == 1) {
+            serverPort = config.getR1Config().getServerPort();
+            rmCommandPort = config.getR1Config().getRmCommandPort();
+            checkpointPort = config.getR1Config().getCheckpointPort();
+        } else if (id == 2) {
+            serverPort = config.getR2Config().getServerPort();
+            rmCommandPort = config.getR2Config().getRmCommandPort();
+            checkpointPort = config.getR3Config().getCheckpointPort();
+        } else if (id == 3) {
+            serverPort = config.getR3Config().getServerPort();
+            rmCommandPort = config.getR3Config().getRmCommandPort();
+            checkpointPort = config.getR3Config().getCheckpointPort();
         } else {
-            int checkpointPort = Integer.parseInt(args[3]);
-            server = getBackupServer(listeningPort, rmListeningPort, checkpointPort);
+            System.out.println("Impossible");
+            return;
         }
 
-        System.out.println("Server: " + (isPrimary ? "Primary server " : "Backup server ") + listeningPort + " to be set up");
-
+        /* Launch passive server */
+        PassiveServerReplica server = getBackupServer(serverPort, rmCommandPort, checkpointPort);
         server.service();
     }
 }

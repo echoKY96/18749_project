@@ -1,4 +1,4 @@
-package tasks;
+package servers.rm_command_handlers;
 
 import pojo.Checkpoint;
 import servers.ActiveServerReplica;
@@ -8,16 +8,16 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 
-public class RMCommandHandler implements Runnable {
+public class ActiveRMCommandHandler implements Runnable {
 
-    private static final String hostname = ActiveServerReplica.getHostname();
+    private static final String hostName = "127.0.0.1";
 
     private final String NEW_ADD = "new_add";
 
     private final Socket socket;
     private final ActiveServerReplica server;
 
-    public RMCommandHandler(Socket socket, ActiveServerReplica server) {
+    public ActiveRMCommandHandler(Socket socket, ActiveServerReplica server) {
         this.socket = socket;
         this.server = server;
     }
@@ -34,9 +34,11 @@ public class RMCommandHandler implements Runnable {
             String new_add = messages[0];
             int checkpointPort = Integer.parseInt(messages[1]);
 
-            if (new_add.equalsIgnoreCase(NEW_ADD)) {
-                if (server.isReady()) {
-                    synchronized (RMCommandHandler.class) {
+            if (new_add.equalsIgnoreCase(NEW_ADD) && server.isReady()) {
+                if (server.getCheckpointPort() == checkpointPort) {
+                    server.clearRQ();
+                } else {
+                    synchronized (ActiveRMCommandHandler.class) {
                         server.setCheckpointing();
                         sendCheckpointOneTime(checkpointPort);
                         server.setNotCheckpointing();
@@ -57,7 +59,7 @@ public class RMCommandHandler implements Runnable {
 
         /* Establish TCP/IP connection */
         try {
-            socket = new Socket(hostname, checkpointPort);
+            socket = new Socket(hostName, checkpointPort);
             out = new ObjectOutputStream(socket.getOutputStream());
         } catch (IOException u) {
             System.out.println("Active " + checkpointPort + " is not open");

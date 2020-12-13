@@ -1,4 +1,4 @@
-package tasks;
+package servers.checkpoint_tasks;
 
 import pojo.Checkpoint;
 import servers.ActiveServerReplica;

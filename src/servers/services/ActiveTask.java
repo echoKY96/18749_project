@@ -1,24 +1,24 @@
-package tasks;
+package servers.services;
 
 import pojo.Tuple;
-import servers.PassiveServerReplica;
+import servers.ActiveServerReplica;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.net.Socket;
-import java.util.Map;
 
-public class PassiveTask implements Runnable {
+public class ActiveTask implements Runnable {
+
     private static final String LFD_MSG = "heartbeat";
 
-    private ServiceProvider sp;
-    private final PassiveServerReplica server;
+    private final ServiceProvider sp;
+    private final ActiveServerReplica server;
     private final Socket socket;
 
-    public PassiveTask(Socket socket, PassiveServerReplica server) {
-        this.sp = new ServiceProvider(socket, server);
-        this.socket = socket;
-        this.server = server;
+    public ActiveTask(Socket socket, ActiveServerReplica server) {
+         this.sp = new ServiceProvider(socket, server);
+         this.socket = socket;
+         this.server = server;
     }
 
     @Override
@@ -27,13 +27,12 @@ public class PassiveTask implements Runnable {
             DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
             DataInputStream dis = new DataInputStream(socket.getInputStream());
 
-            if (server.isPrimary()) {
-                dos.writeUTF("Server " + socket.getLocalPort() + " : Welcome, keep a number in range [1, 10] and I'll guess it, enter \"play\" to start a game.");
-            }
+            // Must send a line even if recovered, otherwise the client would block
+            dos.writeUTF("Server " + socket.getLocalPort() + " : Welcome, keep a number in range [1, 10] and I'll guess it, enter \"play\" to start a game.");
 
             while (true) {
                 String line;
-                if (server.isPrimary() && !server.isRQEmpty()) {
+                if (server.isReady() && !server.isRQEmpty()) {
                     line = server.dequeue();
                 } else {
                     line = dis.readUTF();
@@ -51,13 +50,15 @@ public class PassiveTask implements Runnable {
                     Integer requestNum = tuple.getRequestNum();
 
                     // logger
-                    System.out.println("Client " + clientId + ", " + "request_num " + requestNum + ", " + message);
+                    System.out.println("Client " + clientId + ", " + "request_num: " + requestNum + ", " + "message: " + message);
 
-                    if (server.isPrimary()) {
+                    if (server.isReady() && !server.isCheckpointing()) {
                         if (!sp.gameService(dos, clientId, message)) {
                             break;
                         }
-                    } else if (!server.isPrimary()) {
+                    } else if (server.isReady() && server.isCheckpointing()) {
+                        sp.queuingService(line);
+                    } else if (!server.isReady()) {
                         sp.queuingService(line);
                     } else {
                         System.out.println("Impossible");
@@ -70,6 +71,7 @@ public class PassiveTask implements Runnable {
             dis.close();
             socket.close();
         } catch (Exception e) {
+            e.printStackTrace();
             System.out.println("Client " + socket.getPort() + " Lost connection");
         }
     }

@@ -1,18 +1,16 @@
-package servers.server_threads;
+package servers.rm_command_handlers;
 
 import servers.ActiveServerReplica;
-import tasks.ActiveTask;
-import tasks.RMCommandHandler;
 
 import java.net.ServerSocket;
 import java.net.Socket;
 
-public class RMCommandDispatcher implements Runnable {
+public class ActiveRMCommandDispatcher implements Runnable {
 
     ServerSocket rmSS;
     ActiveServerReplica server;
 
-    public RMCommandDispatcher(ServerSocket rmSS, ActiveServerReplica server) {
+    public ActiveRMCommandDispatcher(ServerSocket rmSS, ActiveServerReplica server) {
         this.rmSS = rmSS;
         this.server = server;
     }
@@ -22,7 +20,7 @@ public class RMCommandDispatcher implements Runnable {
         while (true) {
             try {
                 Socket socket = rmSS.accept();
-                RMCommandHandler handler = new RMCommandHandler(socket, server);
+                ActiveRMCommandHandler handler = new ActiveRMCommandHandler(socket, server);
                 new Thread(handler).start();
             } catch (Exception e) {
                 System.out.println("Error in accepting connection request");

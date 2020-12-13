@@ -1,4 +1,4 @@
-package tasks;
+package servers.services;
 
 import pojo.Tuple;
 import servers.ServerReplica;
@@ -6,8 +6,6 @@ import servers.ServerReplica;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
-import java.util.AbstractMap;
-import java.util.Map;
 
 public class ServiceProvider {
     private static final String PLAY_MSG = "play";
@@ -37,6 +35,8 @@ public class ServiceProvider {
         return new Tuple(clientId, message, requestNum);
     }
 
+
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean gameService(DataOutputStream dos, Integer clientId, String message) throws IOException {
 
         if (message.equalsIgnoreCase(REPLAY_MSG) || (!server.containsClientState(clientId) && message.equalsIgnoreCase(PLAY_MSG))) {

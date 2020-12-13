@@ -4,9 +4,12 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
+import java.sql.Time;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeoutException;
 
 public class PassiveClient {
 
@@ -23,7 +26,7 @@ public class PassiveClient {
             BlockingQueue<String> mq = new LinkedBlockingQueue<>();
             mqList.add(mq);
 
-            Thread clientThread = new ClientThread(localhost, serverPort, clientId, mq);
+            Thread clientThread = new PassiveClientThread(localhost, serverPort, clientId, mq);
             clientThread.start();
         }
 
@@ -45,14 +48,14 @@ public class PassiveClient {
         }
     }
 
-    static class ClientThread extends Thread {
+    static private class PassiveClientThread extends Thread {
 
         private final String serverAddress;
         private final int serverPort;
         private final int clientId;
         BlockingQueue<String> mq;
 
-        public ClientThread(String serverAddress, int serverPort, int clientId, BlockingQueue<String> mq) {
+        public PassiveClientThread(String serverAddress, int serverPort, int clientId, BlockingQueue<String> mq) {
             this.clientId = clientId;
             this.serverAddress = serverAddress;
             this.serverPort = serverPort;
@@ -68,6 +71,7 @@ public class PassiveClient {
             while (true) {
                 try {
                     socket = new Socket(serverAddress, serverPort);
+                    socket.setSoTimeout(500);
                     input = new DataInputStream(socket.getInputStream());
                     out = new DataOutputStream(socket.getOutputStream());
                     break;
@@ -80,7 +84,10 @@ public class PassiveClient {
             while (true) {
                 try {
                     String response = input.readUTF();
-                    System.out.println(response);
+
+                    if (!response.contains("Idle")) {
+                        System.out.println(response);
+                    }
 
                     String userInput = mq.take();
                     out.writeUTF(clientId + ": " + userInput + ": " + request_num);
@@ -92,7 +99,7 @@ public class PassiveClient {
                     System.out.println("Server " + serverPort + " breaks down");
 
                     mq.clear();
-                    Thread clientThread = new ClientThread(localhost, serverPort, clientId, mq);
+                    Thread clientThread = new PassiveClientThread(localhost, serverPort, clientId, mq);
                     clientThread.start();
 
                     break;

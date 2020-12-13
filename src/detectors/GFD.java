@@ -1,5 +1,7 @@
 package detectors;
 
+import configurations.Configuration;
+
 import java.awt.*;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -16,17 +18,18 @@ public class GFD {
     private static List<String> registerServers;
     private static Map<String,Integer> serverPortMap;
     static {
-        portNumber = 6000;
         registerServers = new ArrayList<>();
         serverPortMap = new HashMap<>();
-        serverPortMap.put("8080",1);
-        serverPortMap.put("8081",2);
-        serverPortMap.put("8082",3);
     }
 
     public static void main(String[] args) throws IOException {
-        int rmPortNumber = Integer.parseInt(args[0]);
-        Socket rmSocket = new Socket("127.0.0.1", rmPortNumber);
+        Configuration config = Configuration.getConfig();
+        portNumber = config.getGFDConfig().getServerPort();
+        serverPortMap.put(String.valueOf(config.getR1Config().getServerPort()), 1);
+        serverPortMap.put(String.valueOf(config.getR2Config().getServerPort()), 2);
+        serverPortMap.put(String.valueOf(config.getR3Config().getServerPort()), 3);
+
+        Socket rmSocket = new Socket("127.0.0.1", config.getRMConfig().getGFDServerPort());
         RMHandleThread rmHandleThread = new RMHandleThread(rmSocket,"","");
         rmHandleThread.start();
 

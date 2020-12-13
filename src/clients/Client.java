@@ -45,7 +45,7 @@ public class Client {
         }
     }
 
-    static class ClientThread extends Thread {
+    static private class ClientThread extends Thread {
         private final String serverAddress;
         private final int serverPort;
         private final int clientId;
@@ -84,17 +84,20 @@ public class Client {
                 try {
                     String response = input.readUTF();
 
-                    String[] replies = response.split(": ");
-                    String serverInfo = replies[0];
-                    String serviceInfo = replies[1];
-
-                    synchronized (responseLock) {
-                        if (responseContainer.contains(serviceInfo)) {
-                            System.out.println("Discard duplicate from " + serverInfo);
-                        } else {
-                            responseContainer.clear();
-                            responseContainer.add(serviceInfo);
-                            System.out.println(response);
+                    if (response.contains("Welcome")) {
+                        System.out.println(response);
+                    } else {
+                        String[] replies = response.split(": ");
+                        String serverInfo = replies[0];
+                        String serviceInfo = replies[1];
+                        synchronized (responseLock) {
+                            if (responseContainer.contains(serviceInfo)) {
+                                System.out.println("Discard duplicate from " + serverInfo);
+                            } else {
+                                responseContainer.clear();
+                                responseContainer.add(serviceInfo);
+                                System.out.println(response);
+                            }
                         }
                     }
 
