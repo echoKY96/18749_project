@@ -22,6 +22,8 @@ abstract public class RM {
     protected static final Map<Integer, Integer> rmToCheckpointPortMap;
     protected static final Map<String, Integer> serverToCheckpointPortMap;
 
+    protected static final String SERVER_LAUNCH_CMD = "cmd /c start ServerLauncher.bat ";
+
     static {
         registeredServers = new ArrayList<>();
         serverPorts = new ArrayList<>();
@@ -31,6 +33,25 @@ abstract public class RM {
         rmToServerPortMap = new HashMap<>();
         rmToCheckpointPortMap = new HashMap<>();
         serverToCheckpointPortMap = new HashMap<>();
+    }
+
+    /**
+     * Convert serverPort to server ID
+     * @param serverPort serverPort
+     */
+    protected static int getServerId(String serverPort) {
+        int sp = Integer.parseInt(serverPort);
+        Configuration config = Configuration.getConfig();
+        if (sp == config.getR1Config().getServerPort()) {
+            return 1;
+        } else if (sp == config.getR2Config().getServerPort()) {
+            return 2;
+        } else if (sp == config.getR3Config().getServerPort()) {
+            return 3;
+        } else {
+            System.out.println("Impossible");
+            return -1;
+        }
     }
 
     /**

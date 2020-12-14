@@ -18,20 +18,13 @@ public class PassiveServerReplica extends ServerReplica {
     private Integer primaryCheckpointPort = null;
 
     /* Server state */
-    private final Integer checkpointPort;
     private Boolean isPrimary = false;
 
     @SuppressWarnings("FieldMayBeFinal")
     private AtomicInteger checkpointCount = new AtomicInteger(0);
 
-    private PassiveServerReplica(Integer serverPort, Integer rmCommandPort, Integer checkpointPort) {
-        super(serverPort, rmCommandPort);
-        this.checkpointPort = checkpointPort;
-    }
-
-    /* Constructors */
-    public static PassiveServerReplica getBackupServer(int serverPort, int rmCommandPort, int checkpointPort) {
-        return new PassiveServerReplica(serverPort, rmCommandPort, checkpointPort);
+    public PassiveServerReplica(Integer serverPort, Integer rmCommandPort, Integer checkpointPort) {
+        super(serverPort, rmCommandPort, checkpointPort);
     }
 
     /* Getters and setters */
@@ -42,10 +35,6 @@ public class PassiveServerReplica extends ServerReplica {
 
     public void setPrimaryCheckpointPort(Integer primaryCheckpointPort) {
         this.primaryCheckpointPort = primaryCheckpointPort;
-    }
-
-    public Integer getCheckpointPort() {
-        return checkpointPort;
     }
 
     public Boolean isPrimary() {

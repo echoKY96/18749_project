@@ -20,17 +20,19 @@ abstract public class ServerReplica {
 
     protected final Integer rmCommandPort;
 
+    protected final Integer checkpointPort;
+
     protected AtomicBoolean iAmReady = new AtomicBoolean(false);
 
-    public ServerReplica(int serverPort, int rmCommandPort) {
+    public ServerReplica(int serverPort, int rmCommandPort, int checkpointPort) {
         this.serverPort = serverPort;
         this.rmCommandPort = rmCommandPort;
+        this.checkpointPort = checkpointPort;
     }
 
     public ConcurrentHashMap<Integer, Interval> getState() {
         return state;
     }
-
 
     @SuppressWarnings("unused")
     public String getHostName() {
@@ -47,12 +49,21 @@ abstract public class ServerReplica {
         return rmCommandPort;
     }
 
+    public Integer getCheckpointPort() {
+        return checkpointPort;
+    }
+
     public void setState(ConcurrentHashMap<Integer, Interval> state) {
         this.state = state;
     }
 
     public void logState() {
+        System.out.println("State:");
         state.forEach((k, v) -> System.out.println("Client " + k + " state: [" + v.getLo() + ", " + v.getHi() + "]"));
+    }
+
+    public void logBacklog() {
+        System.out.println(requestQueue);
     }
 
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
@@ -149,7 +160,7 @@ abstract public class ServerReplica {
             server = new ActiveServerReplica(serverPort, rmCommandPort, checkpointPort);
             server.service();
         } else if (mode == Configuration.Mode.Passive) {
-            server = PassiveServerReplica.getBackupServer(serverPort, rmCommandPort, checkpointPort);
+            server = new PassiveServerReplica(serverPort, rmCommandPort, checkpointPort);
             server.service();
         } else {
             System.out.println("Impossible");

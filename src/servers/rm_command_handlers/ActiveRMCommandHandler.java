@@ -36,13 +36,21 @@ public class ActiveRMCommandHandler implements Runnable {
 
             if (new_add.equalsIgnoreCase(NEW_ADD) && server.isReady()) {
                 if (server.getCheckpointPort() == checkpointPort) {
+                    /* New added server itself */
+                    System.out.println("Active server: RM knows I am online");
+
+                    // back here
                     server.clearRQ();
                 } else {
-                    synchronized (ActiveRMCommandHandler.class) {
-                        server.setCheckpointing();
-                        sendCheckpointOneTime(checkpointPort);
-                        server.setNotCheckpointing();
-                    }
+                    server.setCheckpointing();
+                    System.out.println("Active server: new server added, goes into quiescence");
+
+                    sendCheckpointOneTime(checkpointPort);
+
+                    System.out.println("Active Server: Quiescence ends");
+                    System.out.println("Active Server Backlog:");
+                    server.logBacklog();
+                    server.setNotCheckpointing();
                 }
             }
 

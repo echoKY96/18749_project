@@ -21,17 +21,10 @@ public class ActiveServerReplica extends ServerReplica {
 
     private final Integer rmQueryPort = Configuration.getConfig().getRMConfig().getQueryServerPort();
 
-    private final Integer checkpointPort;
-
     private final AtomicBoolean checkpointing = new AtomicBoolean(false);
 
     public ActiveServerReplica(int serverPort, int rmCommandPort, int checkpointPort) {
-        super(serverPort, rmCommandPort);
-        this.checkpointPort = checkpointPort;
-    }
-
-    public Integer getCheckpointPort() {
-        return checkpointPort;
+        super(serverPort, rmCommandPort, checkpointPort);
     }
 
     public boolean isCheckpointing() {
@@ -124,6 +117,8 @@ public class ActiveServerReplica extends ServerReplica {
             Thread receiver = new Thread(new ReceiveCheckpointOneTime(this));
             receiver.start();
         } else {
+            System.out.println("Active Server: First active server, no checkpointing");
+
             setReady();
         }
 

@@ -14,7 +14,7 @@ import java.util.Scanner;
 public class Configuration {
     public enum Mode {Active, Passive}
 
-    private static final File CONFIG_FILE = new File("src/configurations/resources/config.txt");
+    private static final File CONFIG_FILE = new File("config.txt");
 
     private volatile static Configuration singleton;
 

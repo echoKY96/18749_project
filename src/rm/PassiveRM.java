@@ -97,6 +97,10 @@ public class PassiveRM extends RM {
                                 new SendCommandThread(rmCommandPort).start();
                             }
                         }
+
+                        /* Relaunch server */
+                        int serverId = getServerId(serverPort);
+                        Runtime.getRuntime().exec(SERVER_LAUNCH_CMD + serverId);
                     }
 
                     System.out.println("RM: " + registeredServers.size() + " member:" + registeredServers);

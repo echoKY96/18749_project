@@ -109,6 +109,7 @@ public class Client {
                         break;
                     }
                 } catch (IOException e) {
+                    e.printStackTrace();
                     System.out.println("Server " + serverPort + " breaks down");
 
                     mq.clear();

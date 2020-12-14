@@ -43,7 +43,7 @@ public class ReceiveCheckpointOneTime implements Runnable {
                 server.setState(checkpoint.getState()); // thread safety: volatile ensures visibility
                 server.logState();
 
-                System.out.println("Server: Checkpoint received, I am ready");
+                System.out.println("Active server: Checkpoint received, I am ready");
 
                 server.setReady();
                 /* Checkpoint received, terminate the thread */

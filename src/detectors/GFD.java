@@ -22,25 +22,47 @@ public class GFD {
         serverPortMap = new HashMap<>();
     }
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         Configuration config = Configuration.getConfig();
         portNumber = config.getGFDConfig().getServerPort();
         serverPortMap.put(String.valueOf(config.getR1Config().getServerPort()), 1);
         serverPortMap.put(String.valueOf(config.getR2Config().getServerPort()), 2);
         serverPortMap.put(String.valueOf(config.getR3Config().getServerPort()), 3);
 
-        Socket rmSocket = new Socket("127.0.0.1", config.getRMConfig().getGFDServerPort());
+        /* Connect RM */
+        Socket rmSocket = null;
+        boolean connected = false;
+        while (!connected) {
+            try {
+                rmSocket = new Socket("127.0.0.1", config.getRMConfig().getGFDServerPort());
+                connected = true;
+            } catch (IOException e) {
+                System.out.println("RM not open");
+            }
+        }
+
         RMHandleThread rmHandleThread = new RMHandleThread(rmSocket,"","");
         rmHandleThread.start();
 
-        ServerSocket ss = new ServerSocket(portNumber);
+        /* Init server socket */
+        ServerSocket ss;
+        try {
+            ss = new ServerSocket(portNumber);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return;
+        }
+
         System.out.println("GFD is listening on port " + portNumber);
         System.out.println("GFD: 0 members");
         while (true) {
-            LFDHandleThread handThread = new LFDHandleThread(ss.accept(),rmSocket);
-            handThread.start();
+            try {
+                LFDHandleThread handThread = new LFDHandleThread(ss.accept(),rmSocket);
+                handThread.start();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
-
     }
     static class RMHandleThread extends Thread{
         private Socket rmSocket;
