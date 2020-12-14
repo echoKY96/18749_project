@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 abstract public class RM {
     protected static Configuration.Mode mode;
@@ -23,7 +25,7 @@ abstract public class RM {
     protected static final Map<String, Integer> serverToCheckpointPortMap;
 
     protected static final String SERVER_LAUNCH_CMD = "cmd /c start ServerLauncher.bat ";
-
+    private static final Logger RMLog;
     static {
         registeredServers = new ArrayList<>();
         serverPorts = new ArrayList<>();
@@ -33,6 +35,8 @@ abstract public class RM {
         rmToServerPortMap = new HashMap<>();
         rmToCheckpointPortMap = new HashMap<>();
         serverToCheckpointPortMap = new HashMap<>();
+        RMLog = Logger.getLogger("RMLog");
+        RMLog.setLevel(Level.INFO);
     }
 
     /**
@@ -49,7 +53,8 @@ abstract public class RM {
         } else if (sp == config.getR3Config().getServerPort()) {
             return 3;
         } else {
-            System.out.println("Impossible");
+//            System.out.println("Impossible");
+            RMLog.info("Impossible");
             return -1;
         }
     }
@@ -86,11 +91,16 @@ abstract public class RM {
             serverToCheckpointPortMap.put(serverPort, checkpointPort);
         }
 
-        System.out.println("Reading configuration:");
-        System.out.println("Server port - Registered: " + registrationMap);
-        System.out.println("RM command listening port - Server port: " + rmToServerPortMap);
-        System.out.println("RM command listening port - Checkpoint receiving port: " + rmToCheckpointPortMap);
-        System.out.println("Server port - Checkpoint receiving port: " + serverToCheckpointPortMap);
+//        System.out.println("Reading configuration:");
+        RMLog.info("Reading configuration:");
+//        System.out.println("Server port - Registered: " + registrationMap);
+        RMLog.info("Server port - Registered: " + registrationMap);
+//        System.out.println("RM command listening port - Server port: " + rmToServerPortMap);
+        RMLog.info("RM command listening port - Server port: " + rmToServerPortMap);
+//        System.out.println("RM command listening port - Checkpoint receiving port: " + rmToCheckpointPortMap);
+        RMLog.info("RM command listening port - Checkpoint receiving port: " + rmToCheckpointPortMap);
+//        System.out.println("Server port - Checkpoint receiving port: " + serverToCheckpointPortMap);
+        RMLog.info("Server port - Checkpoint receiving port: " + serverToCheckpointPortMap);
         System.out.println();
     }
 
@@ -100,13 +110,16 @@ abstract public class RM {
         Configuration config = Configuration.getConfig();
         RM rm;
         if (config.getMode() == Configuration.Mode.Active) {
-            System.out.println("Active RM: running");
+//            System.out.println("Active RM: running");
+            RMLog.info("Active RM: running");
             rm = new ActiveRM();
         } else if (config.getMode() == Configuration.Mode.Passive) {
-            System.out.println("Passive RM: running");
+//            System.out.println("Passive RM: running");
+            RMLog.info("Passive RM: running");
             rm = new PassiveRM();
         } else {
-            System.out.println("Impossible");
+//            System.out.println("Impossible");
+            RMLog.info("Impossible");
             return;
         }
         rm.readConfiguration();

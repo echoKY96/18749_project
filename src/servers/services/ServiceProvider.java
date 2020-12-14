@@ -6,6 +6,7 @@ import servers.ServerReplica;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.logging.Logger;
 
 public class ServiceProvider {
     private static final String PLAY_MSG = "play";
@@ -13,7 +14,7 @@ public class ServiceProvider {
     private static final String YES_MSG = "y";
     private static final String NO_MSG = "n";
     private static final String EXIT_MSG = "exit";
-
+    private static Logger serviceProviderLog = Logger.getLogger("serviceProvider");
     private final ServerReplica server;
     private final Socket socket;
 
@@ -23,7 +24,8 @@ public class ServiceProvider {
     }
 
     public void logRange(int clientId) {
-        System.out.println("Client " + socket.getPort() + " state: [" + server.getLoById(clientId) + ", " + server.getHiById(clientId) + "]");
+//        System.out.println("Client " + socket.getPort() + " state: [" + server.getLoById(clientId) + ", " + server.getHiById(clientId) + "]");
+        serviceProviderLog.info("Client " + socket.getPort() + " state: [" + server.getLoById(clientId) + ", " + server.getHiById(clientId) + "]");
     }
 
     public Tuple parseLine(String line) {
@@ -44,7 +46,8 @@ public class ServiceProvider {
             server.initStateById(clientId);
 
             // logger
-            System.out.println("Start a new game for client " + socket.getPort());
+//            System.out.println("Start a new game for client " + socket.getPort());
+            serviceProviderLog.info("Start a new game for client " + socket.getPort());
             logRange(clientId);
 
             dos.writeUTF("Server " + socket.getLocalPort() + " : Is this number greater than " + server.getMidById(clientId) + " y/n?");
@@ -52,8 +55,8 @@ public class ServiceProvider {
             server.clearStateById(clientId);
 
             // logger
-            System.out.println("Game Over for client " + socket.getPort());
-
+//            System.out.println("Game Over for client " + socket.getPort());
+            serviceProviderLog.info("Game Over for client " + socket.getPort());
             // exit command would disconnect from the server
             return false;
         } else if (server.containsClientState(clientId)) {
@@ -75,8 +78,8 @@ public class ServiceProvider {
                 server.clearStateById(clientId);
 
                 // logger
-                System.out.println("Game Over for client " + socket.getPort());
-
+//                System.out.println("Game Over for client " + socket.getPort());
+                serviceProviderLog.info("Game Over for client " + socket.getPort());
                 return true;
             } else {
                 /* Game continue */

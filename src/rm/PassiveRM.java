@@ -5,6 +5,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.logging.Logger;
 
 public class PassiveRM extends RM {
 
@@ -13,6 +14,7 @@ public class PassiveRM extends RM {
     private static final String PRIMARY_CKPT_PORT = "primary_checkpoint_port";
 
     private static final String hostName = "127.0.0.1";
+    private static final Logger PassiveRMLog = Logger.getLogger("PassiveRMLog");
 
     public static void setPrimaryServerPort(String primaryServerPort) {
         PassiveRM.primaryServerPort = primaryServerPort;
@@ -22,8 +24,8 @@ public class PassiveRM extends RM {
         ServerSocket gfd;
         try {
             gfd = new ServerSocket(GFDServerPort);
-            System.out.println("RM: " + registeredServers.size() + " member");
-
+//            System.out.println("RM: " + registeredServers.size() + " member");
+            PassiveRMLog.info("RM: " + registeredServers.size() + " member");
             /* Only one GFD, won't cause blocking once the only GFD is accepted */
             new GFDHandleThread(gfd.accept()).start();
 
@@ -103,9 +105,10 @@ public class PassiveRM extends RM {
                         Runtime.getRuntime().exec(SERVER_LAUNCH_CMD + serverId);
                     }
 
-                    System.out.println("RM: " + registeredServers.size() + " member:" + registeredServers);
-                    System.out.println("RM: primary server port: " + primaryServerPort);
-
+//                    System.out.println("RM: " + registeredServers.size() + " member:" + registeredServers);
+                    PassiveRMLog.info("RM: " + registeredServers.size() + " member:" + registeredServers);
+//                    System.out.println("RM: primary server port: " + primaryServerPort);
+                    PassiveRMLog.info("RM: primary server port: " + primaryServerPort);
                 } catch (IOException e) {
                     e.printStackTrace();
                     return;
@@ -162,7 +165,8 @@ public class PassiveRM extends RM {
                 DataOutputStream out = new DataOutputStream(socket.getOutputStream());
                 out.writeUTF(PRIMARY_CKPT_PORT + ":" + serverToCheckpointPortMap.get(primaryServerPort));
 
-                System.out.println("RM: sent PRIMARY_CKPT_PORT command to: " + rmCommandPort);
+//                System.out.println("RM: sent PRIMARY_CKPT_PORT command to: " + rmCommandPort);
+                PassiveRMLog.info("RM: sent PRIMARY_CKPT_PORT command to: " + rmCommandPort);
             } catch (IOException e) {
                 e.printStackTrace();
             }

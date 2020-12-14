@@ -7,6 +7,7 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.logging.Logger;
 
 public class ActiveRMCommandHandler implements Runnable {
 
@@ -16,7 +17,7 @@ public class ActiveRMCommandHandler implements Runnable {
 
     private final Socket socket;
     private final ActiveServerReplica server;
-
+    private static Logger activeHandler = Logger.getLogger("activeHandler");
     public ActiveRMCommandHandler(Socket socket, ActiveServerReplica server) {
         this.socket = socket;
         this.server = server;
@@ -28,8 +29,8 @@ public class ActiveRMCommandHandler implements Runnable {
             DataInputStream dis = new DataInputStream(socket.getInputStream());
 
             String line = dis.readUTF();
-            System.out.println("RM: " + line);
-
+//            System.out.println("RM: " + line);
+            activeHandler.info("RM: " + line);
             String[] messages = line.split(":");
             String new_add = messages[0];
             int checkpointPort = Integer.parseInt(messages[1]);
@@ -37,18 +38,20 @@ public class ActiveRMCommandHandler implements Runnable {
             if (new_add.equalsIgnoreCase(NEW_ADD) && server.isReady()) {
                 if (server.getCheckpointPort() == checkpointPort) {
                     /* New added server itself */
-                    System.out.println("Active server: RM knows I am online");
-
+//                    System.out.println("Active server: RM knows I am online");
+                    activeHandler.info("Active server: RM knows I am online");
                     // back here
                     server.clearRQ();
                 } else {
                     server.setCheckpointing();
-                    System.out.println("Active server: new server added, goes into quiescence");
-
+//                    System.out.println("Active server: new server added, goes into quiescence");
+                    activeHandler.info("Active server: new server added, goes into quiescence");
                     sendCheckpointOneTime(checkpointPort);
 
-                    System.out.println("Active Server: Quiescence ends");
-                    System.out.println("Active Server Backlog:");
+//                    System.out.println("Active Server: Quiescence ends");
+                    activeHandler.info("Active Server: Quiescence ends");
+//                    System.out.println("Active Server Backlog:");
+                    activeHandler.info("Active Server Backlog:");
                     server.logBacklog();
                     server.setNotCheckpointing();
                 }

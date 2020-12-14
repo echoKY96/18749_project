@@ -11,6 +11,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Logger;
 
 public class PassiveServerReplica extends ServerReplica {
 
@@ -22,7 +23,7 @@ public class PassiveServerReplica extends ServerReplica {
 
     @SuppressWarnings("FieldMayBeFinal")
     private AtomicInteger checkpointCount = new AtomicInteger(0);
-
+    private static Logger passiveReplicaLog = Logger.getLogger("PassiveReplicaLog");
     public PassiveServerReplica(Integer serverPort, Integer rmCommandPort, Integer checkpointPort) {
         super(serverPort, rmCommandPort, checkpointPort);
     }
@@ -81,11 +82,15 @@ public class PassiveServerReplica extends ServerReplica {
         try {
             serviceSS = new ServerSocket(serverPort);
             rmSS= new ServerSocket(rmCommandPort);
-            System.out.println("Passive Server: starts listening at client requests port: " + InetAddress.getLocalHost().getHostAddress() + ":" + serverPort);
-            System.out.println("Passive Server: starts listening at RM commands port: " + InetAddress.getLocalHost().getHostAddress() + ":" + rmCommandPort);
+//            System.out.println("Passive Server: starts listening at client requests port: " + InetAddress.getLocalHost().getHostAddress() + ":" + serverPort);
+            passiveReplicaLog.info("Passive Server: starts listening at client requests port: " + InetAddress.getLocalHost().getHostAddress() + ":" + serverPort);
+//            System.out.println("Passive Server: starts listening at RM commands port: " + InetAddress.getLocalHost().getHostAddress() + ":" + rmCommandPort);
+            passiveReplicaLog.info("Passive Server: starts listening at RM commands port: " + InetAddress.getLocalHost().getHostAddress() + ":" + rmCommandPort);
         } catch (IOException e) {
-            System.out.println("Passive Server: client request listening port: " + serverPort + " failed to set up.");
-            System.out.println("Passive Server: rm command listening port: " + rmCommandPort + " failed to set up.");
+//            System.out.println("Passive Server: client request listening port: " + serverPort + " failed to set up.");
+            passiveReplicaLog.info("Passive Server: client request listening port: " + serverPort + " failed to set up.");
+//            System.out.println("Passive Server: rm command listening port: " + rmCommandPort + " failed to set up.");
+            passiveReplicaLog.info("Passive Server: rm command listening port: " + rmCommandPort + " failed to set up.");
             e.printStackTrace();
             return;
         }
@@ -108,7 +113,8 @@ public class PassiveServerReplica extends ServerReplica {
                 Socket socket = serviceSS.accept();
                 new Thread(new PassiveTask(socket, this)).start();
             } catch (Exception e) {
-                System.out.println("Server: Error in accepting connection request");
+//                System.out.println("Server: Error in accepting connection request");
+                passiveReplicaLog.info("Server: Error in accepting connection request");
                 e.printStackTrace();
                 break;
             }

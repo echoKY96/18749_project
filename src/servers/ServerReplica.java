@@ -7,6 +7,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Logger;
 
 abstract public class ServerReplica {
 
@@ -23,7 +24,7 @@ abstract public class ServerReplica {
     protected final Integer checkpointPort;
 
     protected AtomicBoolean iAmReady = new AtomicBoolean(false);
-
+    private static Logger serverReplicaLog = Logger.getLogger("serverReplica");
     public ServerReplica(int serverPort, int rmCommandPort, int checkpointPort) {
         this.serverPort = serverPort;
         this.rmCommandPort = rmCommandPort;
@@ -58,12 +59,13 @@ abstract public class ServerReplica {
     }
 
     public void logState() {
-        System.out.println("State:");
-        state.forEach((k, v) -> System.out.println("Client " + k + " state: [" + v.getLo() + ", " + v.getHi() + "]"));
+//        System.out.println("State:");
+        serverReplicaLog.info("State:");
+        state.forEach((k, v) -> serverReplicaLog.info("Client " + k + " state: [" + v.getLo() + ", " + v.getHi() + "]"));
     }
 
     public void logBacklog() {
-        System.out.println(requestQueue);
+        serverReplicaLog.info(""+requestQueue);
     }
 
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
@@ -151,7 +153,8 @@ abstract public class ServerReplica {
             rmCommandPort = config.getR3Config().getRmCommandPort();
             checkpointPort = config.getR3Config().getCheckpointPort();
         } else {
-            System.out.println("Impossible");
+//            System.out.println("Impossible");
+            serverReplicaLog.info("Impossible");
             return;
         }
 
@@ -163,7 +166,8 @@ abstract public class ServerReplica {
             server = new PassiveServerReplica(serverPort, rmCommandPort, checkpointPort);
             server.service();
         } else {
-            System.out.println("Impossible");
+//            System.out.println("Impossible");
+            serverReplicaLog.info("Impossible");
         }
     }
 }

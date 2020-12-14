@@ -6,10 +6,11 @@ import servers.PassiveServerReplica;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.logging.Logger;
 
 public class ReceiveCheckpointTask implements Runnable {
     private final PassiveServerReplica server;
-
+    private static Logger receiveCheck = Logger.getLogger("receiveCheck");
     public ReceiveCheckpointTask(PassiveServerReplica server) {
         this.server = server;
     }
@@ -20,7 +21,8 @@ public class ReceiveCheckpointTask implements Runnable {
         try {
             ss = new ServerSocket(server.getCheckpointPort());
         } catch (IOException e) {
-            System.out.println("Listening error");
+//            System.out.println("Listening error");
+            receiveCheck.info("Listening error");
             e.printStackTrace();
             return;
         }
@@ -40,7 +42,8 @@ public class ReceiveCheckpointTask implements Runnable {
                     server.setCheckpointCount(checkpoint.getCheckpointCount());
                     server.incrementCheckpointCount();
 
-                    System.out.println("Checkpoint " + checkpoint.getCheckpointCount() + " received");
+//                    System.out.println("Checkpoint " + checkpoint.getCheckpointCount() + " received");
+                    receiveCheck.info("Checkpoint " + checkpoint.getCheckpointCount() + " received");
                     server.logState();
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -50,14 +53,16 @@ public class ReceiveCheckpointTask implements Runnable {
                 /* Server is ready and primary */
                 synchronized (server) {
                     try {
-                        System.out.println("Passive Server: Checkpoint receiving task paused");
+//                        System.out.println("Passive Server: Checkpoint receiving task paused");
+                        receiveCheck.info("Passive Server: Checkpoint receiving task paused");
                         server.wait();
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
                 }
 
-                System.out.println("Passive Server: Checkpoint receiving task awaken");
+//                System.out.println("Passive Server: Checkpoint receiving task awaken");
+                receiveCheck.info("Passive Server: Checkpoint receiving task awaken");
             }
         }
     }

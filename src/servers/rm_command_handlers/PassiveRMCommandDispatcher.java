@@ -4,12 +4,13 @@ import servers.PassiveServerReplica;
 
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.logging.Logger;
 
 public class PassiveRMCommandDispatcher implements Runnable {
 
     ServerSocket rmSS;
     PassiveServerReplica server;
-
+    Logger passiveDispatcher  = Logger.getLogger("passiveDispatcher");
     public PassiveRMCommandDispatcher(ServerSocket rmSS, PassiveServerReplica server) {
         this.rmSS = rmSS;
         this.server = server;
@@ -23,7 +24,8 @@ public class PassiveRMCommandDispatcher implements Runnable {
                 PassiveRMCommandHandler handler = new PassiveRMCommandHandler(socket, server);
                 new Thread(handler).start();
             } catch (Exception e) {
-                System.out.println("Error in accepting connection request");
+//                System.out.println("Error in accepting connection request");
+                passiveDispatcher.info("Error in accepting connection request");
                 e.printStackTrace();
                 break;
             }

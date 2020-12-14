@@ -5,6 +5,7 @@ import servers.PassiveServerReplica;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.logging.Logger;
 
 public class PassiveRMCommandHandler implements Runnable {
 
@@ -13,7 +14,7 @@ public class PassiveRMCommandHandler implements Runnable {
 
     private final Socket socket;
     private final PassiveServerReplica server;
-
+    private static Logger passiveCommandLog = Logger.getLogger("passiveCommandLog");
     public PassiveRMCommandHandler(Socket socket, PassiveServerReplica server) {
         this.socket = socket;
         this.server = server;
@@ -25,8 +26,8 @@ public class PassiveRMCommandHandler implements Runnable {
             DataInputStream dis = new DataInputStream(socket.getInputStream());
 
             String line = dis.readUTF();
-            System.out.println("RM: " + line);
-
+//            System.out.println("RM: " + line);
+            passiveCommandLog.info("RM: " + line);
             String[] messages = line.split(":");
             String message = messages[0];
             int primaryCheckpointPort = Integer.parseInt(messages[1]);
@@ -41,12 +42,14 @@ public class PassiveRMCommandHandler implements Runnable {
                             server.setReady();
                             server.setPrimary();
 
-                            System.out.println("Passive server: elected as primary");
+//                            System.out.println("Passive server: elected as primary");
+                            passiveCommandLog.info("Passive server: elected as primary");
                         } else {
                             server.setReady();
                             server.setBackup();
 
-                            System.out.println("Passive server: elected as backup");
+//                            System.out.println("Passive server: elected as backup");
+                            passiveCommandLog.info("Passive server: elected as backup");
                         }
 
                         server.notifyAll();

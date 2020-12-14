@@ -6,10 +6,11 @@ import servers.PassiveServerReplica;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.net.Socket;
+import java.util.logging.Logger;
 
 public class PassiveTask implements Runnable {
     private static final String LFD_MSG = "heartbeat";
-
+    private static Logger passiveTask = Logger.getLogger("passiveTask");
     private final ServiceProvider sp;
     private final PassiveServerReplica server;
     private final Socket socket;
@@ -43,7 +44,8 @@ public class PassiveTask implements Runnable {
 
                 if (line.contains(LFD_MSG)) {
                     /* LFD connection */
-                    System.out.println(line);
+//                    System.out.println(line);
+                    passiveTask.info(""+line);
                     break;
                 } else {
                     /* Player connection */
@@ -53,15 +55,16 @@ public class PassiveTask implements Runnable {
                     Integer requestNum = tuple.getRequestNum();
 
                     // logger
-                    System.out.println("Client " + clientId + ", " + "request_num: " + requestNum + ", " + "message: " + message);
-
+//                    System.out.println("Client " + clientId + ", " + "request_num: " + requestNum + ", " + "message: " + message);
+                    passiveTask.info("Client " + clientId + ", " + "request_num: " + requestNum + ", " + "message: " + message);
                     if (server.isPrimary() && server.isReady()) {
                         if (!sp.gameService(dos, clientId, message)) {
                             break;
                         }
                     } else {
                         sp.queuingService(line);
-                        System.out.println("Many enqueue");
+//                        System.out.println("Many enqueue");
+                        passiveTask.info("Many enqueue");
                         dos.writeUTF("Idle");
                     }
                 }
@@ -72,7 +75,8 @@ public class PassiveTask implements Runnable {
             dis.close();
             socket.close();
         } catch (Exception e) {
-            System.out.println("Client " + socket.getPort() + " Lost connection");
+//            System.out.println("Client " + socket.getPort() + " Lost connection");
+            passiveTask.info("Client " + socket.getPort() + " Lost connection");
         }
     }
 }

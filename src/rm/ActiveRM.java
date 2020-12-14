@@ -8,20 +8,21 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.logging.Logger;
 
 public class ActiveRM extends RM {
 
     private static final String NEW_ADD = "new_add";
     private static final String QUERY_ONLINE = "queryOnline";
-
+    private static final Logger activeLog = Logger.getLogger("activeLog");
     public void service() {
         ServerSocket gfd;
         ServerSocket ss;
         try {
             gfd = new ServerSocket(GFDServerPort);
             ss = new ServerSocket(queryServerPort);
-            System.out.println("RM: " + registeredServers.size() + " member");
-
+//            System.out.println("RM: " + registeredServers.size() + " member");
+            activeLog.info("RM: " + registeredServers.size() + " member");
             /* Only one GFD, won't cause blocking once the only GFD is accepted */
             new GFDHandleThread(gfd.accept()).start();
 
@@ -51,9 +52,11 @@ public class ActiveRM extends RM {
                 if (line.equalsIgnoreCase(QUERY_ONLINE)) {
                     oos.writeObject(registrationMap);
 
-                    System.out.println("Active new server " + socket.getPort() + " query members");
+//                    System.out.println("Active new server " + socket.getPort() + " query members");
+                    activeLog.info("Active new server " + socket.getPort() + " query members");
                 } else {
-                    System.out.println("Impossible");
+//                    System.out.println("Impossible");
+                    activeLog.info("Impossible");
                 }
 
             } catch (IOException e) {
@@ -118,7 +121,8 @@ public class ActiveRM extends RM {
                         int serverId = getServerId(serverPort);
                         Runtime.getRuntime().exec(SERVER_LAUNCH_CMD + serverId);
                     }
-                    System.out.println("RM: " + registeredServers.size() + " member:" + registeredServers);
+//                    System.out.println("RM: " + registeredServers.size() + " member:" + registeredServers);
+                        activeLog.info("RM: " + registeredServers.size() + " member:" + registeredServers);
                 } catch (IOException e) {
                     e.printStackTrace();
                     return;
@@ -153,7 +157,8 @@ public class ActiveRM extends RM {
                 DataOutputStream out = new DataOutputStream(socket.getOutputStream());
                 out.writeUTF(NEW_ADD + ":" + newAddCheckpointPort);
 
-                System.out.println("RM: sent NEW_ADD command to: " + rmCommandPort);
+//                System.out.println("RM: sent NEW_ADD command to: " + rmCommandPort);
+                activeLog.info("RM: sent NEW_ADD command to: " + rmCommandPort);
             } catch (IOException e) {
                 e.printStackTrace();
             }
