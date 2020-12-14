@@ -28,7 +28,7 @@ abstract public class ServerReplica {
     protected final Integer checkpointPort;
 
     protected AtomicBoolean iAmReady = new AtomicBoolean(false);
-    private static Logger serverReplicaLog = Logger.getLogger("serverReplica");
+    private static final Logger serverReplicaLog = Logger.getLogger("serverReplica");
 
     public ServerReplica(int serverPort, int rmCommandPort, int checkpointPort) {
         this.serverPort = serverPort;
@@ -64,7 +64,6 @@ abstract public class ServerReplica {
     }
 
     public void logState() {
-//        System.out.println("State:");
         serverReplicaLog.info("State:");
         state.forEach((k, v) -> serverReplicaLog.info("Client " + k + " state: [" + v.getLo() + ", " + v.getHi() + "]"));
     }
@@ -158,7 +157,6 @@ abstract public class ServerReplica {
             rmCommandPort = config.getR3Config().getRmCommandPort();
             checkpointPort = config.getR3Config().getCheckpointPort();
         } else {
-//            System.out.println("Impossible");
             serverReplicaLog.info("Impossible");
             return;
         }
@@ -171,7 +169,6 @@ abstract public class ServerReplica {
             server = new PassiveServerReplica(serverPort, rmCommandPort, checkpointPort);
             server.service();
         } else {
-//            System.out.println("Impossible");
             serverReplicaLog.info("Impossible");
         }
     }

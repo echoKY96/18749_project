@@ -17,7 +17,7 @@ public class ActiveRMCommandHandler implements Runnable {
 
     private final Socket socket;
     private final ActiveServerReplica server;
-    private static Logger activeHandler = Logger.getLogger("activeHandler");
+    private static final Logger activeHandler = Logger.getLogger("activeHandler");
     public ActiveRMCommandHandler(Socket socket, ActiveServerReplica server) {
         this.socket = socket;
         this.server = server;
@@ -29,7 +29,6 @@ public class ActiveRMCommandHandler implements Runnable {
             DataInputStream dis = new DataInputStream(socket.getInputStream());
 
             String line = dis.readUTF();
-//            System.out.println("RM: " + line);
             activeHandler.info("RM: " + line);
             String[] messages = line.split(":");
             String new_add = messages[0];
@@ -38,19 +37,15 @@ public class ActiveRMCommandHandler implements Runnable {
             if (new_add.equalsIgnoreCase(NEW_ADD) && server.isReady()) {
                 if (server.getCheckpointPort() == checkpointPort) {
                     /* New added server itself */
-//                    System.out.println("Active server: RM knows I am online");
                     activeHandler.info("Active server: RM knows I am online");
                     // back here
                     server.clearRQ();
                 } else {
                     server.setCheckpointing();
-//                    System.out.println("Active server: new server added, goes into quiescence");
                     activeHandler.info("Active server: new server added, goes into quiescence");
                     sendCheckpointOneTime(checkpointPort);
 
-//                    System.out.println("Active Server: Quiescence ends");
                     activeHandler.info("Active Server: Quiescence ends");
-//                    System.out.println("Active Server Backlog:");
                     activeHandler.info("Active Server Backlog:");
                     server.logBacklog();
                     server.setNotCheckpointing();
@@ -73,7 +68,7 @@ public class ActiveRMCommandHandler implements Runnable {
             socket = new Socket(hostName, checkpointPort);
             out = new ObjectOutputStream(socket.getOutputStream());
         } catch (IOException u) {
-            System.out.println("Active " + checkpointPort + " is not open");
+            activeHandler.info("Active " + checkpointPort + " is not open");
             return;
         }
 
@@ -82,10 +77,10 @@ public class ActiveRMCommandHandler implements Runnable {
             Checkpoint checkpoint = new Checkpoint(server.getState(), 0);
             out.writeObject(checkpoint);
 
-            System.out.println("Server: Sent checkpoint to newly added server " + checkpointPort);
+            activeHandler.info("Server: Sent checkpoint to newly added server " + checkpointPort);
             server.logState();
         } catch (IOException e) {
-            System.out.println("Error in sending checkpoint");
+            activeHandler.info("Error in sending checkpoint");
             e.printStackTrace();
         }
 
@@ -93,7 +88,7 @@ public class ActiveRMCommandHandler implements Runnable {
         try {
             socket.close();
         } catch (IOException e) {
-            System.out.println("Error in closing socket");
+            activeHandler.info("Error in closing socket");
             e.printStackTrace();
         }
     }

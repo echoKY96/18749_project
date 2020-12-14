@@ -10,7 +10,7 @@ import java.util.logging.Logger;
 
 public class ReceiveCheckpointTask implements Runnable {
     private final PassiveServerReplica server;
-    private static Logger receiveCheck = Logger.getLogger("receiveCheck");
+    private static final Logger receiveCheck = Logger.getLogger("receiveCheck");
     public ReceiveCheckpointTask(PassiveServerReplica server) {
         this.server = server;
     }
@@ -21,7 +21,6 @@ public class ReceiveCheckpointTask implements Runnable {
         try {
             ss = new ServerSocket(server.getCheckpointPort());
         } catch (IOException e) {
-//            System.out.println("Listening error");
             receiveCheck.info("Listening error");
             e.printStackTrace();
             return;
@@ -42,7 +41,6 @@ public class ReceiveCheckpointTask implements Runnable {
                     server.setCheckpointCount(checkpoint.getCheckpointCount());
                     server.incrementCheckpointCount();
 
-//                    System.out.println("Checkpoint " + checkpoint.getCheckpointCount() + " received");
                     receiveCheck.info("Checkpoint " + checkpoint.getCheckpointCount() + " received");
                     server.logState();
                 } catch (Exception e) {
@@ -53,7 +51,6 @@ public class ReceiveCheckpointTask implements Runnable {
                 /* Server is ready and primary */
                 synchronized (server) {
                     try {
-//                        System.out.println("Passive Server: Checkpoint receiving task paused");
                         receiveCheck.info("Passive Server: Checkpoint receiving task paused");
                         server.wait();
                     } catch (InterruptedException e) {
@@ -61,7 +58,6 @@ public class ReceiveCheckpointTask implements Runnable {
                     }
                 }
 
-//                System.out.println("Passive Server: Checkpoint receiving task awaken");
                 receiveCheck.info("Passive Server: Checkpoint receiving task awaken");
             }
         }

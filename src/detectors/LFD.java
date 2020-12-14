@@ -23,7 +23,7 @@ public class LFD {
     private volatile boolean serverConnected;
     private volatile boolean serverRegister;
     private volatile boolean serverDeleter;
-    private static Logger LFDLog;
+    private static final Logger LFDLog;
     public LFD(int serverPortNumber, String GFDAddress, int GFDPortNumber, int heartBeatFrequency) {
         this.serverPortNumber = serverPortNumber;
         this.GFDAddress = GFDAddress;
@@ -53,7 +53,6 @@ public class LFD {
         } else if (lfdNum == 3) {
             serverPortNumber = config.getR3Config().getServerPort();
         } else {
-//            System.out.println("Impossible");
             LFDLog.info("Impossible");
             return;
         }
@@ -78,10 +77,8 @@ public class LFD {
             while (true) {
                 try {
                     Socket socket = new Socket("127.0.0.1", lfd.serverPortNumber);
-//                    System.out.println("Server " + lfd.serverPortNumber + ": Alive");
                     LFDLog.info("Server " + lfd.serverPortNumber + ": Alive");
                     DataOutputStream out = new DataOutputStream(socket.getOutputStream());
-//                    System.out.println("LFD " + lfd.lfdId + ": " + HEARTBEAT_MSG + " to server " + lfd.serverPortNumber);
                     LFDLog.info("LFD " + lfd.lfdId + ": " + HEARTBEAT_MSG + " to server " + lfd.serverPortNumber);
                     out.writeUTF("LFD " + lfd.lfdId + ": " + HEARTBEAT_MSG);
                     if (!lfd.serverConnected) {
@@ -94,7 +91,6 @@ public class LFD {
                         lfd.serverConnected = false;
                         lfd.serverDeleter = true;
                     }
-//                    System.out.println("LFD " + lfd.lfdId + ": " + "lost Connection with server " + lfd.serverPortNumber);
                     LFDLog.info("LFD " + lfd.lfdId + ": " + "lost Connection with server " + lfd.serverPortNumber);
                 }
 
@@ -124,7 +120,6 @@ public class LFD {
             while (true) {
                 try {
                     socket = new Socket(lfd.GFDAddress, lfd.GFDPortNumber);
-//                    System.out.println("Heart beating with GFD");
                     LFDLog.info("Heart beating with GFD");
                     out = new DataOutputStream(socket.getOutputStream());
                     in = new DataInputStream(socket.getInputStream());
@@ -134,7 +129,6 @@ public class LFD {
                     lfd.setLfdId(lfdId);
                     break;
                 } catch (IOException u) {
-//                    System.out.println("Can't connect GFD");
                     LFDLog.info("Can't connect GFD");
 
                 }
@@ -157,22 +151,20 @@ public class LFD {
                     }//use functions
                     out.writeUTF("LFD " + lfd.lfdId + ": heartbeat " + heartBeatNum++);
                     message = in.readUTF();
-//                    System.out.println("GFD: " + message);
                     LFDLog.info("GFD: " + message);
                     Thread.sleep(lfd.heartBeatFrequency);
                 } catch (Exception e) {
-//                    System.out.println("GFD is Closed");
                     LFDLog.info("GFD is Closed");
                     return;
                 }
             }
-
-//inform the number of members
-// which member is gone
-            //set the frequency from users
-            // include request number unique for client
-            // print "S1--C1" include log for server
         }
     }
 }
+
+//inform the number of members
+// which member is gone
+//set the frequency from users
+// include request number unique for client
+// print "S1--C1" include log for server
 

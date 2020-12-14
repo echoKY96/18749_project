@@ -10,7 +10,7 @@ import java.util.logging.Logger;
 
 public class PassiveTask implements Runnable {
     private static final String LFD_MSG = "heartbeat";
-    private static Logger passiveTask = Logger.getLogger("passiveTask");
+    private static final Logger passiveTask = Logger.getLogger("passiveTask");
     private final ServiceProvider sp;
     private final PassiveServerReplica server;
     private final Socket socket;
@@ -44,7 +44,6 @@ public class PassiveTask implements Runnable {
 
                 if (line.contains(LFD_MSG)) {
                     /* LFD connection */
-//                    System.out.println(line);
                     passiveTask.info(""+line);
                     break;
                 } else {
@@ -54,8 +53,6 @@ public class PassiveTask implements Runnable {
                     String message = tuple.getMessage();
                     Integer requestNum = tuple.getRequestNum();
 
-                    // logger
-//                    System.out.println("Client " + clientId + ", " + "request_num: " + requestNum + ", " + "message: " + message);
                     passiveTask.info("Client " + clientId + ", " + "request_num: " + requestNum + ", " + "message: " + message);
                     if (server.isPrimary() && server.isReady()) {
                         if (!sp.gameService(dos, clientId, message)) {
@@ -63,7 +60,6 @@ public class PassiveTask implements Runnable {
                         }
                     } else {
                         sp.queuingService(line);
-//                        System.out.println("Many enqueue");
                         passiveTask.info("Many enqueue");
                         dos.writeUTF("Idle");
                     }
@@ -75,7 +71,6 @@ public class PassiveTask implements Runnable {
             dis.close();
             socket.close();
         } catch (Exception e) {
-//            System.out.println("Client " + socket.getPort() + " Lost connection");
             passiveTask.info("Client " + socket.getPort() + " Lost connection");
         }
     }

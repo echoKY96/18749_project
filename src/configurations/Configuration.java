@@ -182,15 +182,4 @@ public class Configuration {
 
         return serverPorts;
     }
-
-    public static void main(String[] args) {
-        Configuration config = getConfig();
-        System.out.println(config.getMode().toString());
-        System.out.println(config.getRMConfig().toString());
-        System.out.println(config.getGFDConfig().toString());
-        System.out.println(config.getLFDConfig().toString());
-        System.out.println(config.getR1Config().toString());
-        System.out.println(config.getR2Config().toString());
-        System.out.println(config.getR3Config().toString());
-    }
 }

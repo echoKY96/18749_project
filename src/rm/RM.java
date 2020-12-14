@@ -51,7 +51,6 @@ abstract public class RM {
         } else if (sp == config.getR3Config().getServerPort()) {
             return 3;
         } else {
-//            System.out.println("Impossible");
             RMLog.info("Impossible");
             return -1;
         }
@@ -89,17 +88,11 @@ abstract public class RM {
             serverToCheckpointPortMap.put(serverPort, checkpointPort);
         }
 
-//        System.out.println("Reading configuration:");
         RMLog.info("Reading configuration:");
-//        System.out.println("Server port - Registered: " + registrationMap);
         RMLog.info("Server port - Registered: " + registrationMap);
-//        System.out.println("RM command listening port - Server port: " + rmToServerPortMap);
         RMLog.info("RM command listening port - Server port: " + rmToServerPortMap);
-//        System.out.println("RM command listening port - Checkpoint receiving port: " + rmToCheckpointPortMap);
         RMLog.info("RM command listening port - Checkpoint receiving port: " + rmToCheckpointPortMap);
-//        System.out.println("Server port - Checkpoint receiving port: " + serverToCheckpointPortMap);
         RMLog.info("Server port - Checkpoint receiving port: " + serverToCheckpointPortMap);
-        System.out.println();
     }
 
     public abstract void service();
@@ -108,15 +101,12 @@ abstract public class RM {
         Configuration config = Configuration.getConfig();
         RM rm;
         if (config.getMode() == Configuration.Mode.Active) {
-//            System.out.println("Active RM: running");
             RMLog.info("Active RM: running");
             rm = new ActiveRM();
         } else if (config.getMode() == Configuration.Mode.Passive) {
-//            System.out.println("Passive RM: running");
             RMLog.info("Passive RM: running");
             rm = new PassiveRM();
         } else {
-//            System.out.println("Impossible");
             RMLog.info("Impossible");
             return;
         }

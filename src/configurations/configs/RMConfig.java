@@ -1,8 +1,8 @@
 package configurations.configs;
 
 public class RMConfig {
-    private Integer GFDServerPort;
-    private Integer queryServerPort;
+    private final Integer GFDServerPort;
+    private final Integer queryServerPort;
 
     public RMConfig(Integer GFDServerPort, int queryServerPort) {
         this.GFDServerPort = GFDServerPort;

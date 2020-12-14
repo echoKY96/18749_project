@@ -13,7 +13,7 @@ public class SendCheckPointTask implements Runnable {
     /* Configuration info about a primary - backups group */
     private static final int CKPT_FREQ = 5000;
     private static final String hostName = "127.0.0.1";
-    private static Logger sendCheckLog = Logger.getLogger("sendCheckLog");
+    private static final Logger sendCheckLog = Logger.getLogger("sendCheckLog");
     private final PassiveServerReplica server;
 
     public SendCheckPointTask(PassiveServerReplica server) {
@@ -31,7 +31,6 @@ public class SendCheckPointTask implements Runnable {
                 socket = new Socket(hostName, serverPort);
                 out = new ObjectOutputStream(socket.getOutputStream());
             } catch (IOException u) {
-//                System.out.println("Backup " + serverPort + " is not open");
                 sendCheckLog.info("Backup " + serverPort + " is not open");
                 continue;
             }
@@ -42,11 +41,9 @@ public class SendCheckPointTask implements Runnable {
                 Checkpoint checkpoint = new Checkpoint(server.getState(), server.getCheckpointCount());
                 out.writeObject(checkpoint);
 
-//                System.out.println("Sent checkpoint " + server.getCheckpointCount() + " to backup " + serverPort);
                 sendCheckLog.info("Sent checkpoint " + server.getCheckpointCount() + " to backup " + serverPort);
                 server.logState();
             } catch (IOException e) {
-//                System.out.println("Error in sending checkpoint");
                 sendCheckLog.info("Error in sending checkpoint");
                 e.printStackTrace();
             }
@@ -55,7 +52,6 @@ public class SendCheckPointTask implements Runnable {
             try {
                 socket.close();
             } catch (IOException e) {
-//                System.out.println("Error in closing socket");
                 sendCheckLog.info("Error in closing socket");
                 e.printStackTrace();
             }
@@ -69,7 +65,6 @@ public class SendCheckPointTask implements Runnable {
         try {
             Thread.sleep(CKPT_FREQ);
         } catch (InterruptedException e) {
-//            System.out.println("Interruption to sleep");
             sendCheckLog.info("Interruption to sleep");
             e.printStackTrace();
         }
@@ -86,7 +81,6 @@ public class SendCheckPointTask implements Runnable {
             } else {
                 synchronized (server) {
                     try {
-//                        System.out.println("Passive Server: Checkpoint Sending task paused");
                         sendCheckLog.info("Passive Server: Checkpoint Sending task paused");
                         server.wait();
                     } catch (InterruptedException e) {
@@ -94,7 +88,6 @@ public class SendCheckPointTask implements Runnable {
                     }
                 }
 
-//                System.out.println("Passive Server: Checkpoint Sending task awaken");
                 sendCheckLog.info("Passive Server: Checkpoint Sending task awaken");
             }
         }

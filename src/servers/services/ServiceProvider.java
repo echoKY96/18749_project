@@ -14,7 +14,7 @@ public class ServiceProvider {
     private static final String YES_MSG = "y";
     private static final String NO_MSG = "n";
     private static final String EXIT_MSG = "exit";
-    private static Logger serviceProviderLog = Logger.getLogger("serviceProvider");
+    private static final Logger serviceProviderLog = Logger.getLogger("serviceProvider");
     private final ServerReplica server;
     private final Socket socket;
 
@@ -24,7 +24,6 @@ public class ServiceProvider {
     }
 
     public void logRange(int clientId) {
-//        System.out.println("Client " + socket.getPort() + " state: [" + server.getLoById(clientId) + ", " + server.getHiById(clientId) + "]");
         serviceProviderLog.info("Client " + socket.getPort() + " state: [" + server.getLoById(clientId) + ", " + server.getHiById(clientId) + "]");
     }
 
@@ -45,8 +44,6 @@ public class ServiceProvider {
             server.clearStateById(clientId);
             server.initStateById(clientId);
 
-            // logger
-//            System.out.println("Start a new game for client " + socket.getPort());
             serviceProviderLog.info("Start a new game for client " + socket.getPort());
             logRange(clientId);
 
@@ -54,9 +51,8 @@ public class ServiceProvider {
         } else if (message.equalsIgnoreCase(EXIT_MSG)) {
             server.clearStateById(clientId);
 
-            // logger
-//            System.out.println("Game Over for client " + socket.getPort());
             serviceProviderLog.info("Game Over for client " + socket.getPort());
+
             // exit command would disconnect from the server
             return false;
         } else if (server.containsClientState(clientId)) {
@@ -77,15 +73,12 @@ public class ServiceProvider {
 
                 server.clearStateById(clientId);
 
-                // logger
-//                System.out.println("Game Over for client " + socket.getPort());
                 serviceProviderLog.info("Game Over for client " + socket.getPort());
                 return true;
             } else {
                 /* Game continue */
                 dos.writeUTF("Server " + socket.getLocalPort() + " : Is this number greater than " + server.getMidById(clientId) + " y/n?");
 
-                // logger
                 logRange(clientId);
             }
         } else {

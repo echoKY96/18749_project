@@ -24,7 +24,6 @@ public class PassiveRMCommandDispatcher implements Runnable {
                 PassiveRMCommandHandler handler = new PassiveRMCommandHandler(socket, server);
                 new Thread(handler).start();
             } catch (Exception e) {
-//                System.out.println("Error in accepting connection request");
                 passiveDispatcher.info("Error in accepting connection request");
                 e.printStackTrace();
                 break;

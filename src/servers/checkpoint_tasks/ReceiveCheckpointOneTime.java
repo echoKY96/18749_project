@@ -11,7 +11,7 @@ import java.util.logging.Logger;
 
 public class ReceiveCheckpointOneTime implements Runnable {
     private final ActiveServerReplica server;
-    private static Logger receiveOnTimeLog = Logger.getLogger("receiveOnTimeLog");
+    private static final Logger receiveOnTimeLog = Logger.getLogger("receiveOnTimeLog");
     public ReceiveCheckpointOneTime(ActiveServerReplica server) {
         this.server = server;
     }
@@ -22,7 +22,6 @@ public class ReceiveCheckpointOneTime implements Runnable {
         try {
             ss = new ServerSocket(server.getCheckpointPort());
         } catch (IOException e) {
-//            System.out.println("Listening error");
             receiveOnTimeLog.info("Listening error");
             e.printStackTrace();
             return;
@@ -33,7 +32,6 @@ public class ReceiveCheckpointOneTime implements Runnable {
             try {
                 socket = ss.accept();
             } catch (Exception e) {
-//                System.out.println("Accept failed");
                 receiveOnTimeLog.info("Accept failed");
                 e.printStackTrace();
                 continue;
@@ -46,7 +44,6 @@ public class ReceiveCheckpointOneTime implements Runnable {
                 server.setState(checkpoint.getState()); // thread safety: volatile ensures visibility
                 server.logState();
 
-//                System.out.println("Active server: Checkpoint received, I am ready");
                 receiveOnTimeLog.info("Active server: Checkpoint received, I am ready");
                 server.setReady();
                 /* Checkpoint received, terminate the thread */

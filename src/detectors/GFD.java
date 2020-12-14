@@ -42,7 +42,6 @@ public class GFD {
                 rmSocket = new Socket("127.0.0.1", config.getRMConfig().getGFDServerPort());
                 connected = true;
             } catch (IOException e) {
-//                System.out.println("RM not open");
                 GFDLog.info("RM not open");
             }
         }
@@ -59,9 +58,7 @@ public class GFD {
             return;
         }
 
-//        System.out.println("GFD is listening on port " + portNumber);
         GFDLog.info("GFD is listening on port " + portNumber);
-//        System.out.println("GFD: 0 members");
         GFDLog.info("GFD: 0 members");
         while (true) {
             try {
@@ -131,7 +128,6 @@ public class GFD {
             while (true) {
                 try {
                     String message = in.readUTF();
-//                    System.out.println(message);
                     GFDLog.info(""+message);
                     if (message.contains("connection request")) {
                         String[] messages = message.split(" ");
@@ -152,7 +148,6 @@ public class GFD {
                         out.writeUTF("heart beat received");//independent threads
                     }
                 } catch (IOException e) {
-//                    System.out.println("LFD" + lfdNumber + " Lost Connection");
                     GFDLog.info("LFD" + lfdNumber + " Lost Connection");
                     return;
                 }
@@ -160,7 +155,6 @@ public class GFD {
             }
         }
         private void printMembers() {
-//            System.out.println("GFD: " + registerServers.size() + " members: " + registerServers);
             GFDLog.info("GFD: " + registerServers.size() + " members: " + registerServers);
         }
         private void notifyRM(String operation,String serverPort){

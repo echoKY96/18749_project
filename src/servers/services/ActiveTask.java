@@ -15,7 +15,7 @@ public class ActiveTask implements Runnable {
     private final ServiceProvider sp;
     private final ActiveServerReplica server;
     private final Socket socket;
-    private static Logger activeTaskLog = Logger.getLogger("activeTask");
+    private static final Logger activeTaskLog = Logger.getLogger("activeTask");
     public ActiveTask(Socket socket, ActiveServerReplica server) {
          this.sp = new ServiceProvider(socket, server);
          this.socket = socket;
@@ -41,7 +41,6 @@ public class ActiveTask implements Runnable {
 
                 if (line.contains(LFD_MSG)) {
                     /* LFD connection */
-//                    System.out.println(line);
                     activeTaskLog.info(""+line);
                     break;
                 } else {
@@ -51,8 +50,6 @@ public class ActiveTask implements Runnable {
                     String message = tuple.getMessage();
                     Integer requestNum = tuple.getRequestNum();
 
-                    // logger
-//                    System.out.println("Client " + clientId + ", " + "request_num: " + requestNum + ", " + "message: " + message);
                     activeTaskLog.info("Client " + clientId + ", " + "request_num: " + requestNum + ", " + "message: " + message);
                     if (server.isReady() && !server.isCheckpointing()) {
                         if (!sp.gameService(dos, clientId, message)) {
@@ -63,7 +60,6 @@ public class ActiveTask implements Runnable {
                     } else if (!server.isReady()) {
                         sp.queuingService(line);
                     } else {
-//                        System.out.println("Impossible");
                         activeTaskLog.info("Impossible");
                     }
                 }
@@ -75,7 +71,6 @@ public class ActiveTask implements Runnable {
             socket.close();
         } catch (Exception e) {
             e.printStackTrace();
-//            System.out.println("Client " + socket.getPort() + " Lost connection");
             activeTaskLog.info("Client " + socket.getPort() + " Lost connection");
         }
     }
