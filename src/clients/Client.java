@@ -46,11 +46,20 @@ abstract public class Client {
         public DataOutputStream getOutput() {
             return output;
         }
+
+        @Override
+        public String toString() {
+            return "SocketStream{" +
+                    "socket=" + socket +
+                    ", input=" + input +
+                    ", output=" + output +
+                    '}';
+        }
     }
 
     protected abstract void play();
 
-    protected void connect(int serverPort) {
+    protected boolean connect(int serverPort) {
         Socket socket;
         DataInputStream input;
         DataOutputStream output;
@@ -61,11 +70,13 @@ abstract public class Client {
             output = new DataOutputStream(socket.getOutputStream());
         } catch (IOException u) {
             System.out.println("Server " + serverPort + " is not open");
-            return;
+            return false;
         }
 
         /* Add to activeSockets */
         activeSockets.put(serverPort, new SocketStream(socket, input, output));
+
+        return true;
     }
 
     public static void main(String[] args) {
@@ -75,8 +86,10 @@ abstract public class Client {
 
         Client client;
         if (config.getMode() == Configuration.Mode.Active) {
+            System.out.println("Active client " + clientId);
             client = new ActiveClient(clientId);
         } else if (config.getMode() == Configuration.Mode.Passive) {
+            System.out.println("Passive client " + clientId);
             client = new PassiveClient(clientId);
         } else {
             System.out.println("Impossible");

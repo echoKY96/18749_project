@@ -21,7 +21,7 @@ public class PassiveClient extends Client{
         }
 
         while (true) {
-            /* Receive from servers */
+            /* Receive from all active servers */
             try {
                 for (int serverPort : activeSockets.keySet()) {
                     SocketStream socketStream = activeSockets.get(serverPort);
@@ -34,7 +34,6 @@ public class PassiveClient extends Client{
                 e.printStackTrace();
             }
 
-
             /* Read user input */
             String userInput = systemIn.next();
             if (userInput.equalsIgnoreCase("exit")) {
@@ -43,6 +42,12 @@ public class PassiveClient extends Client{
 
             /* Send to servers */
             for (int serverPort : Configuration.getConfig().getServerPorts()) {
+                if (!activeSockets.containsKey(serverPort)) {
+                    if (!connect(serverPort)) {
+                        continue;
+                    }
+                }
+
                 SocketStream socketStream = activeSockets.get(serverPort);
                 Socket socket = socketStream.getSocket();
                 DataOutputStream output = socketStream.getOutput();

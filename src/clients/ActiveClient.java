@@ -24,7 +24,7 @@ public class ActiveClient extends Client{
         }
 
         while (true) {
-            /* Receive from servers */
+            /* Receive from all active servers */
             try {
                 responseContainer.clear();
 
@@ -54,8 +54,14 @@ public class ActiveClient extends Client{
                 break;
             }
 
-            /* Send to servers */
+            /* Try to connect all servers, and send to them */
             for (int serverPort : Configuration.getConfig().getServerPorts()) {
+                if (!activeSockets.containsKey(serverPort)) {
+                    if (!connect(serverPort)) {
+                        continue;
+                    }
+                }
+
                 SocketStream socketStream = activeSockets.get(serverPort);
                 Socket socket = socketStream.getSocket();
                 DataOutputStream output = socketStream.getOutput();
