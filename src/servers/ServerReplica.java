@@ -151,7 +151,7 @@ abstract public class ServerReplica {
         } else if (id == 2) {
             serverPort = config.getR2Config().getServerPort();
             rmCommandPort = config.getR2Config().getRmCommandPort();
-            checkpointPort = config.getR3Config().getCheckpointPort();
+            checkpointPort = config.getR2Config().getCheckpointPort();
         } else if (id == 3) {
             serverPort = config.getR3Config().getServerPort();
             rmCommandPort = config.getR3Config().getRmCommandPort();

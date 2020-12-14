@@ -2,9 +2,9 @@ Mode: Active
 // RM: GFDServerPort, queryServerPort
 RM: 7000, 7001
 // R: serverPort, rmCommandPort, checkpointPort
-Replica1: 8080, 10000, 10086
-Replica2: 8081, 10001, 10087
-Replica3: 8082, 10002, 10088
+Replica1: 8080, 10000, 10500
+Replica2: 8081, 10001, 10501
+Replica3: 8082, 10002, 10502
 // GFD serverPort
 GFD: 6000
 // LFD heartbeat frequency
