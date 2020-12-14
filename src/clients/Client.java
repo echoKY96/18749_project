@@ -1,135 +1,88 @@
 package clients;
 
+import configurations.Configuration;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.*;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 
-public class Client {
+abstract public class Client {
+    protected static final String localhost = "127.0.0.1";
 
-    private static final String localhost = "127.0.0.1";
-    private static final Scanner in = new Scanner(System.in);
-    private static int request_num = 0;
+    protected final Scanner systemIn = new Scanner(System.in);
 
-    public static void main(String[] args) {
-        int clientId = Integer.parseInt(args[0]);
-        List<BlockingQueue<String>> mqList = new ArrayList<>();
+    protected final int clientId;
 
-        for (int i = 1; i < args.length; i++) {
-            int serverPort = Integer.parseInt(args[i]);
-            BlockingQueue<String> mq = new LinkedBlockingQueue<>();
-            mqList.add(mq);
+    protected int request_num = 0;
 
-            Thread clientThread = new ClientThread(localhost, serverPort, clientId, mq);
-            clientThread.start();
+    /* key: server port; value: active socket */
+    protected Map<Integer, SocketStream> activeSockets = new HashMap<>();
+
+    public Client(int clientId) {
+        this.clientId = clientId;
+    }
+
+    protected static class SocketStream {
+        Socket socket;
+        DataInputStream input;
+        DataOutputStream output;
+
+        public SocketStream(Socket socket, DataInputStream input, DataOutputStream output) {
+            this.socket = socket;
+            this.input = input;
+            this.output = output;
         }
 
-        try {
-            while (true) {
-                String line = in.next();
+        public Socket getSocket() {
+            return socket;
+        }
 
-                request_num++;
-                for (BlockingQueue<String> mq : mqList) {
-                    mq.put(line);
-                }
+        public DataInputStream getInput() {
+            return input;
+        }
 
-                if (line.equalsIgnoreCase("exit")) {
-                    break;
-                }
-            }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        public DataOutputStream getOutput() {
+            return output;
         }
     }
 
-    static private class ClientThread extends Thread {
-        private final String serverAddress;
-        private final int serverPort;
-        private final int clientId;
-        BlockingQueue<String> mq;
+    protected abstract void play();
 
-        private static final Set<String> responseContainer = new HashSet<>();
-        private static final Object responseLock = new Object();
+    protected void connect(int serverPort) {
+        Socket socket;
+        DataInputStream input;
+        DataOutputStream output;
 
-
-        public ClientThread(String serverAddress, int serverPort, int clientId, BlockingQueue<String> mq) {
-            this.clientId = clientId;
-            this.serverAddress = serverAddress;
-            this.serverPort = serverPort;
-            this.mq = mq;
+        try {
+            socket = new Socket(localhost, serverPort);
+            input = new DataInputStream(socket.getInputStream());
+            output = new DataOutputStream(socket.getOutputStream());
+        } catch (IOException u) {
+            System.out.println("Server " + serverPort + " is not open");
+            return;
         }
 
-        @Override
-        public void run() {
-            Socket socket;
-            DataInputStream input;
-            DataOutputStream out;
+        /* Add to activeSockets */
+        activeSockets.put(serverPort, new SocketStream(socket, input, output));
+    }
 
-            while (true) {
-                try {
-                    socket = new Socket(serverAddress, serverPort);
-                    input = new DataInputStream(socket.getInputStream());
-                    out = new DataOutputStream(socket.getOutputStream());
-                    break;
-                } catch (IOException u) {
-                    System.out.println("Server " + serverPort + " is not open");
-                }
-            }
+    public static void main(String[] args) {
+        int clientId = Integer.parseInt(args[0]);
 
-            /* Receive message from server */
-            while (true) {
-                try {
-                    String response = input.readUTF();
+        Configuration config = Configuration.getConfig();
 
-                    if (response.contains("Welcome")) {
-                        System.out.println(response);
-                    } else {
-                        String[] replies = response.split(": ");
-                        String serverInfo = replies[0];
-                        String serviceInfo = replies[1];
-                        synchronized (responseLock) {
-                            if (responseContainer.contains(serviceInfo)) {
-                                System.out.println("Discard duplicate from " + serverInfo);
-                            } else {
-                                responseContainer.clear();
-                                responseContainer.add(serviceInfo);
-                                System.out.println(response);
-                            }
-                        }
-                    }
-
-                    String userInput = mq.take();
-
-                    out.writeUTF(clientId + ": " + userInput + ": " + request_num);
-
-                    if (userInput.equalsIgnoreCase("exit")) {
-                        break;
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    System.out.println("Server " + serverPort + " breaks down");
-
-                    mq.clear();
-                    Thread clientThread = new ClientThread(localhost, serverPort, clientId, mq);
-                    clientThread.start();
-
-                    break;
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            // close the connection
-            try {
-                input.close();
-                out.close();
-                socket.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+        Client client;
+        if (config.getMode() == Configuration.Mode.Active) {
+            client = new ActiveClient(clientId);
+        } else if (config.getMode() == Configuration.Mode.Passive) {
+            client = new PassiveClient(clientId);
+        } else {
+            System.out.println("Impossible");
+            return;
         }
+
+        client.play();
     }
 }

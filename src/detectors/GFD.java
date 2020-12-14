@@ -8,12 +8,14 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 
 public class GFD {
+    static {
+        Locale.setDefault(new Locale("en", "EN"));
+    }
+
     private static int portNumber;
     private static List<String> registerServers;
     private static Map<String,Integer> serverPortMap;

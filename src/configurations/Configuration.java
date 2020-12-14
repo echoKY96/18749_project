@@ -9,9 +9,14 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Scanner;
 
 public class Configuration {
+    static {
+        Locale.setDefault(new Locale("en", "EN"));
+    }
+
     public enum Mode {Active, Passive}
 
     private static final File CONFIG_FILE = new File("config.txt");
@@ -158,12 +163,24 @@ public class Configuration {
 
     public List<Integer> getCheckPointPorts() {
         List<Integer> checkPointPorts = new ArrayList<>();
+
         Configuration config = Configuration.getConfig();
         checkPointPorts.add(config.getR1Config().getCheckpointPort());
         checkPointPorts.add(config.getR2Config().getCheckpointPort());
         checkPointPorts.add(config.getR3Config().getCheckpointPort());
 
         return checkPointPorts;
+    }
+
+    public List<Integer> getServerPorts() {
+        List<Integer> serverPorts = new ArrayList<>();
+
+        Configuration config = Configuration.getConfig();
+        serverPorts.add(config.getR1Config().getServerPort());
+        serverPorts.add(config.getR2Config().getServerPort());
+        serverPorts.add(config.getR3Config().getServerPort());
+
+        return serverPorts;
     }
 
     public static void main(String[] args) {

@@ -3,6 +3,7 @@ package servers;
 import configurations.Configuration;
 import pojo.Interval;
 
+import java.util.Locale;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -10,6 +11,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 
 abstract public class ServerReplica {
+    static {
+        Locale.setDefault(new Locale("en", "EN"));
+    }
 
     protected volatile ConcurrentHashMap<Integer, Interval> state = new ConcurrentHashMap<>();
 
@@ -25,6 +29,7 @@ abstract public class ServerReplica {
 
     protected AtomicBoolean iAmReady = new AtomicBoolean(false);
     private static Logger serverReplicaLog = Logger.getLogger("serverReplica");
+
     public ServerReplica(int serverPort, int rmCommandPort, int checkpointPort) {
         this.serverPort = serverPort;
         this.rmCommandPort = rmCommandPort;
@@ -65,7 +70,7 @@ abstract public class ServerReplica {
     }
 
     public void logBacklog() {
-        serverReplicaLog.info(""+requestQueue);
+        serverReplicaLog.info("" + requestQueue);
     }
 
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")

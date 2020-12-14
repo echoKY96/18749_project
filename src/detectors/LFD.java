@@ -6,8 +6,13 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.Locale;
 
 public class LFD {
+    static {
+        Locale.setDefault(new Locale("en", "EN"));
+    }
+
     private int lfdId;
     private final int serverPortNumber;
     private final String GFDAddress;

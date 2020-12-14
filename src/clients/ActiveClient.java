@@ -1,15 +1,18 @@
 package clients;
 
-
 import configurations.Configuration;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.HashSet;
+import java.util.Set;
 
-public class PassiveClient extends Client{
-    public PassiveClient(int clientId) {
+public class ActiveClient extends Client{
+    private final Set<String> responseContainer = new HashSet<>();
+
+    public ActiveClient(int clientId) {
         super(clientId);
     }
 
@@ -23,17 +26,27 @@ public class PassiveClient extends Client{
         while (true) {
             /* Receive from servers */
             try {
+                responseContainer.clear();
+
                 for (int serverPort : activeSockets.keySet()) {
                     SocketStream socketStream = activeSockets.get(serverPort);
                     DataInputStream input = socketStream.getInput();
 
                     String response = input.readUTF();
-                    System.out.println(response);
+                    String[] replies = response.split(": ");
+                    String serverInfo = replies[0];
+                    String serviceInfo = replies[1];
+
+                    if (responseContainer.contains(serviceInfo)) {
+                        System.out.println("Discard duplicate from " + serverInfo);
+                    } else {
+                        responseContainer.add(serviceInfo);
+                        System.out.println(response);
+                    }
                 }
             } catch (IOException e) {
                 e.printStackTrace();
             }
-
 
             /* Read user input */
             String userInput = systemIn.next();

@@ -2,10 +2,7 @@ package rm;
 
 import configurations.Configuration;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -37,6 +34,7 @@ abstract public class RM {
         serverToCheckpointPortMap = new HashMap<>();
         RMLog = Logger.getLogger("RMLog");
         RMLog.setLevel(Level.INFO);
+        Locale.setDefault(new Locale("en", "EN"));
     }
 
     /**
