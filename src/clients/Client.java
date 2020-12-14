@@ -6,6 +6,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.*;
 
 abstract public class Client {
@@ -73,9 +74,16 @@ abstract public class Client {
             return false;
         }
 
+        try {
+            socket.setSoTimeout(2000);
+        } catch (SocketException e) {
+            e.printStackTrace();
+        }
+
         /* Add to activeSockets */
         activeSockets.put(serverPort, new SocketStream(socket, input, output));
 
+        System.out.println("Server " + serverPort + " connected");
         return true;
     }
 

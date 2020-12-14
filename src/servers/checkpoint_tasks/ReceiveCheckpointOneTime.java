@@ -5,6 +5,7 @@ import servers.ActiveServerReplica;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.logging.Logger;
@@ -27,6 +28,8 @@ public class ReceiveCheckpointOneTime implements Runnable {
             return;
         }
 
+        receiveOnTimeLog.info("Active Server: starts receiving checkpoint at: " + server.getHostName() + ":" + server.getCheckpointPort());
+
         while (true) {
             Socket socket;
             try {
@@ -42,11 +45,11 @@ public class ReceiveCheckpointOneTime implements Runnable {
                 Checkpoint checkpoint = (Checkpoint) in.readObject();
 
                 server.setState(checkpoint.getState()); // thread safety: volatile ensures visibility
-                server.logState();
 
                 receiveOnTimeLog.info("Active server: Checkpoint received, I am ready");
+                server.logState();
+
                 server.setReady();
-                /* Checkpoint received, terminate the thread */
                 break;
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();

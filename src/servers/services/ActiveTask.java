@@ -28,9 +28,6 @@ public class ActiveTask implements Runnable {
             DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
             DataInputStream dis = new DataInputStream(socket.getInputStream());
 
-            // Must send a line even if recovered, otherwise the client would block
-            dos.writeUTF("Server " + socket.getLocalPort() + " : Welcome, keep a number in range [1, 10] and I'll guess it, enter \"play\" to start a game.");
-
             while (true) {
                 String line;
                 if (server.isReady() && !server.isRQEmpty()) {
@@ -56,8 +53,10 @@ public class ActiveTask implements Runnable {
                             break;
                         }
                     } else if (server.isReady() && server.isCheckpointing()) {
+                        activeTaskLog.info("Active server: quiescence, enqueue request");
                         sp.queuingService(line);
                     } else if (!server.isReady()) {
+                        activeTaskLog.info("Active server: receiving checkpoint, enqueue request");
                         sp.queuingService(line);
                     } else {
                         activeTaskLog.info("Impossible");

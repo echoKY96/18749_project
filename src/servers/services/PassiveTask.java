@@ -27,12 +27,6 @@ public class PassiveTask implements Runnable {
             DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
             DataInputStream dis = new DataInputStream(socket.getInputStream());
 
-            if (server.isPrimary() && server.isReady()) {
-                dos.writeUTF("Server " + socket.getLocalPort() + " : Welcome, keep a number in range [1, 10] and I'll guess it, enter \"play\" to start a game.");
-            } else {
-                dos.writeUTF("Idle");
-            }
-
             while (true) {
                 String line;
                 if (server.isPrimary() && !server.isRQEmpty()) {
@@ -44,7 +38,7 @@ public class PassiveTask implements Runnable {
 
                 if (line.contains(LFD_MSG)) {
                     /* LFD connection */
-                    passiveTask.info(""+line);
+                    passiveTask.info("" + line);
                     break;
                 } else {
                     /* Player connection */
@@ -60,7 +54,7 @@ public class PassiveTask implements Runnable {
                         }
                     } else {
                         sp.queuingService(line);
-                        passiveTask.info("Many enqueue");
+                        passiveTask.info("Passive backup server: idle, enqueue request");
                         dos.writeUTF("Idle");
                     }
                 }

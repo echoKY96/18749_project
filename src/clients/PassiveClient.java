@@ -7,8 +7,9 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 
-public class PassiveClient extends Client{
+public class PassiveClient extends Client {
     public PassiveClient(int clientId) {
         super(clientId);
     }
@@ -21,26 +22,13 @@ public class PassiveClient extends Client{
         }
 
         while (true) {
-            /* Receive from all active servers */
-            try {
-                for (int serverPort : activeSockets.keySet()) {
-                    SocketStream socketStream = activeSockets.get(serverPort);
-                    DataInputStream input = socketStream.getInput();
-
-                    String response = input.readUTF();
-                    System.out.println(response);
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
             /* Read user input */
             String userInput = systemIn.next();
             if (userInput.equalsIgnoreCase("exit")) {
                 break;
             }
 
-            /* Send to servers */
+            /* Try to connect all servers, and send to them */
             for (int serverPort : Configuration.getConfig().getServerPorts()) {
                 if (!activeSockets.containsKey(serverPort)) {
                     if (!connect(serverPort)) {
@@ -67,8 +55,37 @@ public class PassiveClient extends Client{
                         i.printStackTrace();
                     }
                 }
+            }
+            request_num++;
 
-                request_num++;
+            /* Receive from all active servers */
+            for (int serverPort : Configuration.getConfig().getServerPorts()) {
+                if (!activeSockets.containsKey(serverPort)) {
+                    continue;
+                }
+                SocketStream socketStream = activeSockets.get(serverPort);
+                Socket socket = socketStream.getSocket();
+                DataOutputStream output = socketStream.getOutput();
+                DataInputStream input = socketStream.getInput();
+                try {
+                    String response = input.readUTF();
+                    if (!response.contains("Idle")) {
+                        System.out.println(response);
+                    }
+                } catch (SocketTimeoutException i) {
+                    /* close the connection */
+                    System.out.println("Server " + serverPort + " time out, breaks down");
+                    try {
+                        input.close();
+                        output.close();
+                        socket.close();
+                        activeSockets.remove(serverPort);
+                    } catch (IOException k) {
+                        k.printStackTrace();
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         }
     }

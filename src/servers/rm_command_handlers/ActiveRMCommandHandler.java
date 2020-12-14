@@ -34,22 +34,29 @@ public class ActiveRMCommandHandler implements Runnable {
             String new_add = messages[0];
             int checkpointPort = Integer.parseInt(messages[1]);
 
-            if (new_add.equalsIgnoreCase(NEW_ADD) && server.isReady()) {
+            /* New_Add message received */
+            if (new_add.equalsIgnoreCase(NEW_ADD)) {
                 if (server.getCheckpointPort() == checkpointPort) {
                     /* New added server itself */
-                    activeHandler.info("Active server: RM knows I am online");
-                    // back here
+                    activeHandler.info("Active server: RM knows I am online. Old backlog discarded, starts caching new ones");
+
                     server.clearRQ();
                 } else {
-                    server.setCheckpointing();
-                    activeHandler.info("Active server: new server added, goes into quiescence");
-                    sendCheckpointOneTime(checkpointPort);
+                    if (server.isReady() && server.isRQEmpty()) {
+                        server.setCheckpointing();
+                        activeHandler.info("Active server: New server added, goes into quiescence");
+                        sendCheckpointOneTime(checkpointPort);
 
-                    activeHandler.info("Active Server: Quiescence ends");
-                    activeHandler.info("Active Server Backlog:");
-                    server.logBacklog();
-                    server.setNotCheckpointing();
+                        activeHandler.info("Active Server: Quiescence ends");
+                        activeHandler.info("Active Server Backlog:");
+                        server.logBacklog();
+                        server.setNotCheckpointing();
+                    } else {
+                        activeHandler.info("Active server: Not at newest state, no checkpointing");
+                    }
                 }
+            } else {
+                activeHandler.info("Impossible");
             }
 
         } catch (IOException e) {
