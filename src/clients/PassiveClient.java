@@ -10,8 +10,8 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 
 public class PassiveClient extends Client {
-    public PassiveClient(int clientId) {
-        super(clientId);
+    public PassiveClient(int clientId, int requestFrequency) {
+        super(clientId, requestFrequency);
     }
 
     @Override
@@ -23,7 +23,14 @@ public class PassiveClient extends Client {
 
         while (true) {
             /* Read user input */
-            String userInput = systemIn.next();
+            String userInput;
+            if (isManual) {
+                userInput = systemIn.next();
+            } else {
+                userInput = getRandomInput();
+                System.out.println(userInput);
+            }
+
             if (userInput.equalsIgnoreCase("exit")) {
                 break;
             }
@@ -69,6 +76,11 @@ public class PassiveClient extends Client {
                 DataInputStream input = socketStream.getInput();
                 try {
                     String response = input.readUTF();
+
+                    if (response.contains("Game Over")) {
+                        gameOver = true;
+                    }
+
                     if (!response.contains("Idle")) {
                         System.out.println(response);
                     }
@@ -84,6 +96,14 @@ public class PassiveClient extends Client {
                         k.printStackTrace();
                     }
                 } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            if (!isManual) {
+                try {
+                    Thread.sleep(requestFrequency);
+                } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             }

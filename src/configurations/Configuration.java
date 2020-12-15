@@ -1,9 +1,7 @@
 package configurations;
 
-import configurations.configs.GFDConfig;
-import configurations.configs.LFDConfig;
-import configurations.configs.RMConfig;
-import configurations.configs.ServerReplicaConfig;
+import clients.Client;
+import configurations.configs.*;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -17,17 +15,25 @@ public class Configuration {
         Locale.setDefault(new Locale("en", "EN"));
     }
 
-    public enum Mode {Active, Passive}
+    public enum ReplicationMode {Active, Passive}
+
+    public enum RecoveryMode {Manual, Auto}
 
     private static final File CONFIG_FILE = new File("config.txt");
 
     private volatile static Configuration singleton;
 
-    private Mode mode;
+    private ReplicationMode replicationMode;
+
+    private RecoveryMode recoveryMode;
 
     private ServerReplicaConfig R1Config;
     private ServerReplicaConfig R2Config;
     private ServerReplicaConfig R3Config;
+
+    private ClientConfig C1Config;
+    private ClientConfig C2Config;
+    private ClientConfig C3Config;
 
     private GFDConfig GFDConfig;
 
@@ -57,8 +63,10 @@ public class Configuration {
 
         while (scanner.hasNext()) {
             String line = scanner.nextLine();
-            if (line.startsWith("Mode")) {
-                parseModeConfig(line);
+            if (line.startsWith("ReplicationMode")) {
+                parseReplicationModeConfig(line);
+            } else if (line.startsWith("RecoveryMode")) {
+                parseRecoveryModeConfig(line);
             } else if (line.startsWith("RM")) {
                 parseRMConfig(line);
             } else if (line.startsWith("GFD")) {
@@ -67,6 +75,8 @@ public class Configuration {
                 parseLFDConfig(line);
             } else if (line.startsWith("Replica")) {
                 parseServerReplicaConfig(line);
+            } else if (line.startsWith("Client")) {
+                parseClientConfig(line);
             } else {
                 if (!line.startsWith("//")) {
                     System.out.println("Impossible");
@@ -75,11 +85,21 @@ public class Configuration {
         }
     }
 
-    private void parseModeConfig(String line) {
+    private void parseReplicationModeConfig(String line) {
         if (line.contains("Active")) {
-            mode = Mode.Active;
-        } else if (line.contains("Passive")){
-            mode = Mode.Passive;
+            replicationMode = ReplicationMode.Active;
+        } else if (line.contains("Passive")) {
+            replicationMode = ReplicationMode.Passive;
+        } else {
+            System.out.println("Impossible");
+        }
+    }
+
+    private void parseRecoveryModeConfig(String line) {
+        if (line.contains("Manual")) {
+            recoveryMode = RecoveryMode.Manual;
+        } else if (line.contains("Auto")) {
+            recoveryMode = RecoveryMode.Auto;
         } else {
             System.out.println("Impossible");
         }
@@ -117,6 +137,24 @@ public class Configuration {
         }
     }
 
+    private void parseClientConfig(String line) {
+        line = line.replaceAll("\\s", "");
+        String[] idAndConfig = line.split(":");
+        String id = idAndConfig[0];
+        String configLine = idAndConfig[1];
+        int requestFrequency = Integer.parseInt(configLine);
+
+        if (id.equalsIgnoreCase("Client1")) {
+            C1Config = new ClientConfig(requestFrequency);
+        } else if (id.equalsIgnoreCase("Client2")) {
+            C2Config = new ClientConfig(requestFrequency);
+        } else if (id.equalsIgnoreCase("Client3")) {
+            C3Config = new ClientConfig(requestFrequency);
+        } else {
+            System.out.println("Impossible");
+        }
+    }
+
     private void parseGFDConfig(String line) {
         line = line.replaceAll("\\s", "");
         String[] idAndConfig = line.split(":");
@@ -133,8 +171,12 @@ public class Configuration {
         LFDConfig = new LFDConfig(heartBeatFrequency);
     }
 
-    public Mode getMode() {
-        return mode;
+    public ReplicationMode getReplicationMode() {
+        return replicationMode;
+    }
+
+    public RecoveryMode getRecoveryMode() {
+        return recoveryMode;
     }
 
     public ServerReplicaConfig getR1Config() {
@@ -147,6 +189,18 @@ public class Configuration {
 
     public ServerReplicaConfig getR3Config() {
         return R3Config;
+    }
+
+    public ClientConfig getC1Config() {
+        return C1Config;
+    }
+
+    public ClientConfig getC2Config() {
+        return C2Config;
+    }
+
+    public ClientConfig getC3Config() {
+        return C3Config;
     }
 
     public GFDConfig getGFDConfig() {

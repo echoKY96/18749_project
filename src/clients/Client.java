@@ -16,13 +16,20 @@ abstract public class Client {
 
     protected final int clientId;
 
+    protected final int requestFrequency;
+
     protected int request_num = 0;
+
+    protected boolean gameOver = true;
+
+    protected static boolean isManual;
 
     /* key: server port; value: active socket */
     protected Map<Integer, SocketStream> activeSockets = new HashMap<>();
 
-    public Client(int clientId) {
+    public Client(int clientId, int requestFrequency) {
         this.clientId = clientId;
+        this.requestFrequency = requestFrequency;
     }
 
     protected static class SocketStream {
@@ -87,18 +94,48 @@ abstract public class Client {
         return true;
     }
 
+    protected String getRandomInput() {
+        if (gameOver) {
+            gameOver = false;
+            return "play";
+        }
+
+        Random rand = new Random();
+
+        int randInt = rand.nextInt(2);
+
+        if (randInt == 0) {
+            return "y";
+        } else {
+            return "n";
+        }
+    }
+
     public static void main(String[] args) {
         int clientId = Integer.parseInt(args[0]);
+        isManual = args[1].equalsIgnoreCase("Manual");
 
         Configuration config = Configuration.getConfig();
 
+        int requestFrequency;
+        if (clientId == 1) {
+            requestFrequency = config.getC1Config().getRequestFrequency();
+        } else if (clientId == 2) {
+            requestFrequency = config.getC2Config().getRequestFrequency();
+        } else if (clientId == 3) {
+            requestFrequency = config.getC3Config().getRequestFrequency();
+        } else {
+            System.out.println("Impossible");
+            return;
+        }
+
         Client client;
-        if (config.getMode() == Configuration.Mode.Active) {
+        if (config.getReplicationMode() == Configuration.ReplicationMode.Active) {
             System.out.println("Active client " + clientId);
-            client = new ActiveClient(clientId);
-        } else if (config.getMode() == Configuration.Mode.Passive) {
+            client = new ActiveClient(clientId, requestFrequency);
+        } else if (config.getReplicationMode() == Configuration.ReplicationMode.Passive) {
             System.out.println("Passive client " + clientId);
-            client = new PassiveClient(clientId);
+            client = new PassiveClient(clientId, requestFrequency);
         } else {
             System.out.println("Impossible");
             return;

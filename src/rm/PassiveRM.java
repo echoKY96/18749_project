@@ -1,5 +1,7 @@
 package rm;
 
+import configurations.Configuration;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -100,8 +102,10 @@ public class PassiveRM extends RM {
                         }
 
                         /* Relaunch server */
-                        int serverId = getServerId(serverPort);
-                        Runtime.getRuntime().exec(SERVER_LAUNCH_CMD + serverId);
+                        if (Configuration.getConfig().getRecoveryMode() == Configuration.RecoveryMode.Auto) {
+                            int serverId = getServerId(serverPort);
+                            Runtime.getRuntime().exec(SERVER_LAUNCH_CMD + serverId);
+                        }
                     }
 
                     PassiveRMLog.info("RM: " + registeredServers.size() + " member:" + registeredServers);

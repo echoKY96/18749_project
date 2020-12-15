@@ -33,20 +33,21 @@ public class PassiveRMCommandHandler implements Runnable {
 
             if (message.equalsIgnoreCase(PRIMARY_CKPT_PORT)) {
                 if (server.getPrimaryCheckpointPort() == null || server.getPrimaryCheckpointPort() != primaryCheckpointPort) {
+                    /* Multiple RM commands would cause race condition */
                     synchronized (server) {
-                        /* Primary re-elected */
+                        /* Update primary */
                         server.setPrimaryCheckpointPort(primaryCheckpointPort);
 
                         if (server.getCheckpointPort() == primaryCheckpointPort) {
                             server.setReady();
                             server.setPrimary();
 
-                            passiveCommandLog.info("Passive server: elected as primary");
+                            passiveCommandLog.info("Passive server: elected as primary, I am ready");
                         } else {
                             server.setReady();
                             server.setBackup();
 
-                            passiveCommandLog.info("Passive server: elected as backup");
+                            passiveCommandLog.info("Passive server: elected as backup, I am ready");
                         }
 
                         server.notifyAll();

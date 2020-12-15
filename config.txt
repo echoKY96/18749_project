@@ -1,7 +1,10 @@
-Mode: Active
+// Replication Mode: Passive, Active
+ReplicationMode: Active
+// RecoveryMode: Auto, Manual
+RecoveryMode: Auto
 // RM: GFDServerPort, queryServerPort
 RM: 7000, 7001
-// R: serverPort, rmCommandPort, checkpointPort
+// Replica: serverPort, rmCommandPort, checkpointPort
 Replica1: 8080, 10000, 10086
 Replica2: 8081, 10001, 10087
 Replica3: 8082, 10002, 10088
@@ -9,3 +12,7 @@ Replica3: 8082, 10002, 10088
 GFD: 6000
 // LFD heartbeat frequency
 LFD: 3000
+// Client request frequency
+Client1: 3000
+Client2: 5000
+Client3: 8000

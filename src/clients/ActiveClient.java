@@ -13,8 +13,8 @@ import java.util.Set;
 public class ActiveClient extends Client {
     private final Set<String> responseContainer = new HashSet<>();
 
-    public ActiveClient(int clientId) {
-        super(clientId);
+    public ActiveClient(int clientId, int requestFrequency) {
+        super(clientId, requestFrequency);
     }
 
     @Override
@@ -26,7 +26,14 @@ public class ActiveClient extends Client {
 
         while (true) {
             /* Read user input */
-            String userInput = systemIn.next();
+            String userInput;
+            if (isManual) {
+                userInput = systemIn.next();
+            } else {
+                userInput = getRandomInput();
+                System.out.println(userInput);
+            }
+
             if (userInput.equalsIgnoreCase("exit")) {
                 break;
             }
@@ -78,6 +85,10 @@ public class ActiveClient extends Client {
                     String serverInfo = replies[0];
                     String serviceInfo = replies[1];
 
+                    if (serviceInfo.contains("Game Over")) {
+                        gameOver = true;
+                    }
+
                     if (responseContainer.contains(serviceInfo)) {
                         System.out.println("Discard duplicate from " + serverInfo);
                     } else {
@@ -96,6 +107,14 @@ public class ActiveClient extends Client {
                         k.printStackTrace();
                     }
                 } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            if (!isManual) {
+                try {
+                    Thread.sleep(requestFrequency);
+                } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             }

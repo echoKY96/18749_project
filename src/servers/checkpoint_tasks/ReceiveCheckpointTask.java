@@ -37,7 +37,7 @@ public class ReceiveCheckpointTask implements Runnable {
                     Checkpoint checkpoint = (Checkpoint)in.readObject();
 
                     // server.clearRQ();
-                    server.setState(checkpoint.getState()); // thread safety: volatile ensures visibility
+                    server.setState(checkpoint.getState());
                     server.setCheckpointCount(checkpoint.getCheckpointCount());
                     server.incrementCheckpointCount();
 

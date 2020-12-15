@@ -7,7 +7,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 abstract public class RM {
-    protected static Configuration.Mode mode;
+    protected static Configuration.ReplicationMode replicationMode;
 
     protected static int GFDServerPort;
     protected static int queryServerPort;
@@ -62,7 +62,7 @@ abstract public class RM {
     protected void readConfiguration() {
         Configuration config = Configuration.getConfig();
 
-        mode = config.getMode();
+        replicationMode = config.getReplicationMode();
 
         GFDServerPort = config.getRMConfig().getGFDServerPort();
         queryServerPort = config.getRMConfig().getQueryServerPort();
@@ -100,10 +100,10 @@ abstract public class RM {
     public static void main(String[] args) {
         Configuration config = Configuration.getConfig();
         RM rm;
-        if (config.getMode() == Configuration.Mode.Active) {
+        if (config.getReplicationMode() == Configuration.ReplicationMode.Active) {
             RMLog.info("Active RM: running");
             rm = new ActiveRM();
-        } else if (config.getMode() == Configuration.Mode.Passive) {
+        } else if (config.getReplicationMode() == Configuration.ReplicationMode.Passive) {
             RMLog.info("Passive RM: running");
             rm = new PassiveRM();
         } else {

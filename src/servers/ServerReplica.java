@@ -139,7 +139,7 @@ abstract public class ServerReplica {
         int id = Integer.parseInt(args[0]);
         Configuration config = Configuration.getConfig();
 
-        Configuration.Mode mode = config.getMode();
+        Configuration.ReplicationMode replicationMode = config.getReplicationMode();
 
         int serverPort;
         int rmCommandPort;
@@ -162,10 +162,10 @@ abstract public class ServerReplica {
         }
 
         ServerReplica server;
-        if (mode == Configuration.Mode.Active) {
+        if (replicationMode == Configuration.ReplicationMode.Active) {
             server = new ActiveServerReplica(serverPort, rmCommandPort, checkpointPort);
             server.service();
-        } else if (mode == Configuration.Mode.Passive) {
+        } else if (replicationMode == Configuration.ReplicationMode.Passive) {
             server = new PassiveServerReplica(serverPort, rmCommandPort, checkpointPort);
             server.service();
         } else {

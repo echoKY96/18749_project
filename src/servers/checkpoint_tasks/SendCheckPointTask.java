@@ -76,7 +76,7 @@ public class SendCheckPointTask implements Runnable {
             // not ready: block
             // ready and primary: send
             // ready and backup: block
-            if (server.isReady() && server.isPrimary()) {
+            if (server.isReady() && server.isPrimary() && !server.isRQEmpty()) {
                 sendCheckpoint();
             } else {
                 synchronized (server) {
